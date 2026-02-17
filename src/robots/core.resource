@@ -1,5 +1,5 @@
 *** Settings ***
-Library    Browser
+Library    Browser    strict=False
 Library    OperatingSystem
 
 *** Keywords ***
@@ -18,21 +18,33 @@ Wait For Element
 
 Click Element
     [Arguments]    ${selector}
-    Click    ${selector}
+    Click    ${selector}    force=True
 
 Type Into Element
     [Arguments]    ${selector}    ${text}
-    Fill Text    ${selector}    ${text}
+    Fill Text    ${selector}    ${text}    force=True
+
+Press Enter
+    [Arguments]    ${selector}
+    # Press enter on the specific element
+    Focus    ${selector}
+    Keyboard Key    press    Enter
 
 Capture DOM Source
-    [Arguments]    ${output_path}=dom.html
+    [Arguments]    ${filename}=dom.html
     ${html}=    Get Property    body    innerHTML
-    # Save to file because stdout capture is unreliable for large HTML
-    Create File    ${output_path}    ${html}
+    Create File    ${OUTPUT DIR}${/}${filename}    ${html}
     RETURN    ${html}
 
 Extract Element Data
-    [Arguments]    ${selector}    ${output_path}=result.txt
-    ${text}=    Get Text    ${selector}
-    Create File    ${output_path}    ${text}
-    RETURN    ${text}
+    [Arguments]    ${selector}    ${filename}=result.txt
+    # Get all texts if multiple elements exist
+    ${texts}=    Get Text    ${selector}
+    Create File    ${OUTPUT DIR}${/}${filename}    ${texts}
+    RETURN    ${texts}
+
+Extract All Links
+    [Arguments]    ${selector}    ${filename}=links.txt
+    ${links}=    Get Attribute    ${selector}    href
+    Create File    ${OUTPUT DIR}${/}${filename}    ${links}
+    RETURN    ${links}

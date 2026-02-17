@@ -1,0 +1,44 @@
+{"level":30,"time":"2026-02-17T22:14:48.421Z","pid":87747,"hostname":"iMac27.local","msg":"Listening on 127.0.0.1:62981"}
+(node:87747) DeprecationWarning: Calling start() is no longer necessary. It can be safely omitted.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+{"level":30,"time":"2026-02-17T22:14:49.489Z","pid":87747,"hostname":"iMac27.local","msg":"Start of node method newBrowser"}
+{"level":30,"time":"2026-02-17T22:14:49.944Z","pid":87747,"hostname":"iMac27.local","msg":"Adding browser to stack: chromium, version: 136.0.7103.25"}
+{"level":30,"time":"2026-02-17T22:14:49.945Z","pid":87747,"hostname":"iMac27.local","msg":"End of node method newBrowser"}
+{"level":30,"time":"2026-02-17T22:14:49.951Z","pid":87747,"hostname":"iMac27.local","msg":"Start of node method newPage"}
+{"level":30,"time":"2026-02-17T22:14:49.945Z","pid":87747,"hostname":"iMac27.local","msg":"Adding 0 contexts to browser"}
+{"level":30,"time":"2026-02-17T22:14:49.951Z","pid":87747,"hostname":"iMac27.local","msg":"currentBrowser: [object Object]"}
+{"level":30,"time":"2026-02-17T22:14:49.960Z","pid":87747,"hostname":"iMac27.local","msg":"Changed active context"}
+{"level":30,"time":"2026-02-17T22:14:50.330Z","pid":87747,"hostname":"iMac27.local","msg":"Video path: undefined"}
+{"level":30,"time":"2026-02-17T22:14:50.330Z","pid":87747,"hostname":"iMac27.local","msg":"Changed active page"}
+{"level":30,"time":"2026-02-17T22:14:50.937Z","pid":87747,"hostname":"iMac27.local","msg":"End of node method newPage"}
+{"level":30,"time":"2026-02-17T22:14:50.942Z","pid":87747,"hostname":"iMac27.local","msg":"Start of node method fillText"}
+{"level":30,"time":"2026-02-17T22:14:50.942Z","pid":87747,"hostname":"iMac27.local","msg":"Strict mode is enabled, find Locator with #query in page."}
+{"level":30,"time":"2026-02-17T22:14:51.524Z","pid":87747,"hostname":"iMac27.local","msg":"End of node method fillText"}
+{"level":30,"time":"2026-02-17T22:14:51.528Z","pid":87747,"hostname":"iMac27.local","msg":"Start of node method waitForElementState"}
+{"level":30,"time":"2026-02-17T22:14:51.528Z","pid":87747,"hostname":"iMac27.local","msg":"Strict mode is enabled, find Locator with #query in page."}
+{"level":30,"time":"2026-02-17T22:14:51.589Z","pid":87747,"hostname":"iMac27.local","msg":"End of node method waitForElementState"}
+{"level":30,"time":"2026-02-17T22:14:51.592Z","pid":87747,"hostname":"iMac27.local","msg":"Start of node method waitForElementState"}
+{"level":30,"time":"2026-02-17T22:14:51.592Z","pid":87747,"hostname":"iMac27.local","msg":"Strict mode is enabled, find Locator with a.link_service[href='https://news.naver.com/'] in page."}
+{"level":30,"time":"2026-02-17T22:14:51.614Z","pid":87747,"hostname":"iMac27.local","msg":"End of node method waitForElementState"}
+{"level":30,"time":"2026-02-17T22:14:51.618Z","pid":87747,"hostname":"iMac27.local","msg":"Start of node method getText"}
+{"level":30,"time":"2026-02-17T22:14:51.618Z","pid":87747,"hostname":"iMac27.local","msg":"Strict mode is enabled, find Locator with a.link_headline in page."}
+{"level":30,"time":"2026-02-17T22:14:51.836Z","pid":87747,"hostname":"iMac27.local","msg":"Retrieved text for element a.link_headline containing "}
+{"level":30,"time":"2026-02-17T22:14:51.837Z","pid":87747,"hostname":"iMac27.local","msg":"End of node method getText"}
+{"level":30,"time":"2026-02-17T22:14:51.842Z","pid":87747,"hostname":"iMac27.local","msg":"Start of node method getBrowserCatalog"}
+{"level":30,"time":"2026-02-17T22:14:51.844Z","pid":87747,"hostname":"iMac27.local","msg":"End of node method getBrowserCatalog"}
+{"level":30,"time":"2026-02-17T22:14:51.846Z","pid":87747,"hostname":"iMac27.local","msg":"Start of node method getBrowserCatalog"}
+{"level":30,"time":"2026-02-17T22:14:51.847Z","pid":87747,"hostname":"iMac27.local","msg":"End of node method getBrowserCatalog"}
+{"level":30,"time":"2026-02-17T22:14:51.848Z","pid":87747,"hostname":"iMac27.local","msg":"Start of node method getBrowserCatalog"}
+{"level":30,"time":"2026-02-17T22:14:51.850Z","pid":87747,"hostname":"iMac27.local","msg":"End of node method getBrowserCatalog"}
+{"level":30,"time":"2026-02-17T22:14:51.852Z","pid":87747,"hostname":"iMac27.local","msg":"Start of node method getBrowserCatalog"}
+{"level":30,"time":"2026-02-17T22:14:51.853Z","pid":87747,"hostname":"iMac27.local","msg":"End of node method getBrowserCatalog"}
+{"level":30,"time":"2026-02-17T22:14:51.855Z","pid":87747,"hostname":"iMac27.local","msg":"Changed active context"}
+{"level":30,"time":"2026-02-17T22:14:51.855Z","pid":87747,"hostname":"iMac27.local","msg":"Changing current active page: page=98676217-d90f-4ce7-8749-a028d6a351f7"}
+{"level":30,"time":"2026-02-17T22:14:51.855Z","pid":87747,"hostname":"iMac27.local","msg":"Changed active page"}
+{"level":30,"time":"2026-02-17T22:14:51.862Z","pid":87747,"hostname":"iMac27.local","msg":"Start of node method closeContext"}
+{"level":30,"time":"2026-02-17T22:14:51.885Z","pid":87747,"hostname":"iMac27.local","msg":"Removed page=d378e919-1863-4c50-a950-93c8f9dd8359 from context=74bf7ac3-a129-421a-993b-5082ee49f519 page stack"}
+{"level":30,"time":"2026-02-17T22:14:51.904Z","pid":87747,"hostname":"iMac27.local","msg":"End of node method closeContext"}
+{"level":30,"time":"2026-02-17T22:14:51.909Z","pid":87747,"hostname":"iMac27.local","msg":"Start of node method getBrowserCatalog"}
+{"level":30,"time":"2026-02-17T22:14:51.909Z","pid":87747,"hostname":"iMac27.local","msg":"End of node method getBrowserCatalog"}
+{"level":30,"time":"2026-02-17T22:14:51.940Z","pid":87747,"hostname":"iMac27.local","msg":"Start of node method closeAllBrowsers"}
+{"level":30,"time":"2026-02-17T22:14:52.150Z","pid":87747,"hostname":"iMac27.local","msg":"End of node method closeAllBrowsers"}

@@ -41,15 +41,18 @@ Decompose the user's request into a sequence of robot actions.
 ### Available Keywords and Argument Rules:
 1. "Open Visible Browser" - Args: ["URL"] (URL MUST include protocol like https://)
 2. "Navigate To URL" - Args: ["URL"] (URL MUST include protocol like https://)
-3. "Wait For Element" - Intent: "What to wait for", Selector: null (Analyzer will find it)
-4. "Click Element" - Intent: "What to click", Args: [], Selector: null (Analyzer will find it)
-5. "Type Into Element" - Intent: "What to type into", Args: ["Text to type"], Selector: null (Analyzer will find it)
-6. "Capture DOM Source" - No args.
-7. "Extract Element Data" - Intent: "What to extract", Selector: null.
+3. "Wait For Element" - Intent: "What to wait for", Selector: null
+4. "Click Element" - Intent: "What to click", Args: [], Selector: null
+5. "Type Into Element" - Intent: "What to type into", Args: ["Text"], Selector: null
+6. "Press Enter" - Intent: "Submit or confirm", Selector: null
+7. "Capture DOM Source" - No args.
+8. "Extract Element Data" - Intent: "What to extract", Selector: null (Works for multiple elements at once).
+9. "Extract All Links" - Intent: "What links to extract", Selector: null.
 
 ### CRITICAL RULES:
 - Use ONLY the keyword names listed above. NO OTHER KEYWORDS.
-- For Click/Type/Wait/Extract, set "selector" to null. The Analyzer will resolve it.
+- For Click/Type/Wait/Extract/Press Enter, set "selector" to null. The Analyzer will resolve it.
+- If you type into a search bar, you MUST follow it with either "Click Element" on the search button OR "Press Enter" on the search bar.
 - Do NOT include the selector in the "args" array.
 - Respond ONLY with a JSON object in the format:
 {
@@ -90,6 +93,8 @@ Decompose the user's request into a sequence of robot actions.
   return {
     plan: expandedPlan,
     remainingSteps: expandedPlan,
+    completedSteps: [],
+    context: {},
     status: 'planning',
     reasoning: parsed.reasoning
   };

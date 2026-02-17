@@ -10,6 +10,12 @@ export const validator = async (state, config) => {
 
   const systemPrompt = `You are a web automation validator.
 Given the original user intent, the action performed, and the execution result, determine if the goal was met.
+
+### CRITICAL RULES:
+- If the action was "Press Enter" or "Click" to submit a search, verify that the browser actually navigated or the state changed.
+- If navigation failed or was skipped, the intent is NOT fulfilled.
+- If the result text is empty but the user wanted data, the intent is NOT fulfilled.
+
 Respond ONLY with a JSON object in the format:
 {
   "success": true/false,
@@ -43,7 +49,7 @@ Execution Result: ${JSON.stringify(lastResult)}
   };
 
   return {
-    completedSteps: [...completed, stepResult],
+    completedSteps: [stepResult], // Reducer will concat this
     currentStep: null,
     status: 'validating'
   };

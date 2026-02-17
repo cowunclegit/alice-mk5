@@ -29,7 +29,12 @@ const run = async () => {
     context: { verbosity },
     retryCount: 0,
     status: 'idle',
-    sessionId: sessionId
+    sessionId: sessionId,
+    plan: [],
+    currentStep: null,
+    currentHTML: null,
+    candidates: [],
+    reasoning: ''
   };
 
   await logger.info(`에이전트를 시작합니다. 프롬프트: "${prompt}"`);

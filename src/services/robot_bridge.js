@@ -14,12 +14,18 @@ export class RobotBridge {
     for (const action of actions) {
       const { keyword, args = [] } = action;
       
-      // Filter out null/undefined/empty string arguments
       const safeArgs = Array.isArray(args) ? args.filter(a => a !== null && a !== undefined && a !== '') : [];
       
-      // CRITICAL: Robot Framework requires 2+ spaces (using 4 for safety) to separate keyword and each argument.
-      const argsStr = safeArgs.length > 0 
-        ? '    ' + safeArgs.join('    ') 
+      // Escape leading # to prevent them from being treated as comments in Robot Framework
+      const escapedArgs = safeArgs.map(arg => {
+        if (typeof arg === 'string' && arg.startsWith('#')) {
+          return `\\${arg}`;
+        }
+        return arg;
+      });
+      
+      const argsStr = escapedArgs.length > 0 
+        ? '    ' + escapedArgs.join('    ') 
         : '';
         
       testSteps += `    ${keyword}${argsStr}\n`;

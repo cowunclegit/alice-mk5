@@ -15,11 +15,13 @@ A step has failed. Analyze history and original intent to fix the REMAINING plan
 3. "Wait For Element" - Intent: "Goal", Selector: null
 4. "Click Element" - Intent: "Goal", Args: [], Selector: null
 5. "Type Into Element" - Intent: "Goal", Args: ["Text"], Selector: null
-6. "Capture DOM Source" - No args.
-7. "Extract Element Data" - Intent: "Goal", Selector: null.
+6. "Press Enter" - Intent: "Submit or confirm", Selector: null
+7. "Capture DOM Source" - No args.
+8. "Extract Element Data" - Intent: "Goal", Selector: null.
 
 ### CRITICAL RULES:
 - Use ONLY the keyword names above.
+- If you type into a search bar, you MUST include either a "Click Element" or a "Press Enter" step.
 - If a selector failed, do NOT hardcode a new one unless you are 100% sure. Set "selector" to null to let the Analyzer re-try discovery.
 - Respond ONLY with a JSON object:
 {
