@@ -2,22 +2,30 @@
 
 ## Agent Orchestrator (LangGraph.js)
 
-### `validator(state: AgentState): Promise<Partial<AgentState>>`
-**Purpose**: Analyzes the latest `StepResult` and `completedSteps` against the `input` intent.
-- **Logic**: Determines if the step was successful AND if the sequence is on track.
-- **Output**: `next_node` (Executor, Reviser, or Finalize) and optional `reasoning`.
+### `planner(state: AgentState): Promise<Partial<AgentState>>`
+**Purpose**: Generates high-level `plan` and initial `remainingSteps`.
 
-### `reviser(state: AgentState): Promise<Partial<AgentState>>`
-**Purpose**: Generates a new `remainingSteps` sequence when a problem is detected.
-- **Input**: `completedSteps` (history) and original `input`.
-- **Output**: Updated `remainingSteps`, `plan`, and `retryCount`.
+### `analyzer(state: AgentState): Promise<Partial<AgentState>>`
+**Purpose**: Uses Cheerio to discover elements and update `currentStep.selector`.
+
+### `executor(state: AgentState): Promise<Partial<AgentState>>`
+**Purpose**: Triggers Robot Framework for the `currentStep`.
+
+### `validator(state: AgentState): Promise<Partial<AgentState>>`
+**Purpose**: Finalizes results and moves `currentStep` to `completedSteps`.
+
+## Analysis Service (Cheerio)
+
+### `extractElements(html: string): ElementCandidate[]`
+**Purpose**: Structured extraction of interactive DOM elements.
+
+### `pruneDOM(html: string): string`
+**Purpose**: Strips non-essential nodes to minimize LLM token consumption.
 
 ## Robot Bridge
 
-### `executeRobot(keyword: String, args: Array): Promise<StepResult>`
-**Purpose**: Spawns the CLI process. Returns structured pass/fail and extracted data.
+### `runKeyword(keyword: string, args: any[]): Promise<StepResult>`
+**Purpose**: Standard CLI execution of Robot Framework keywords.
 
-## Configuration
-
-### `config.yaml`
-Central schema for `replan_limit` (Default: 5) and `automation_delay`.
+### `captureDOM(): Promise<string>`
+**Purpose**: Specialized action to retrieve the current browser page source.

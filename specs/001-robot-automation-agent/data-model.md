@@ -2,22 +2,25 @@
 
 ## Entities
 
-### Agent State (Plan & Execute + Replan)
+### Agent State (Plan, Analyze & Execute)
 The central state managed by LangGraph.js.
 - `input`: (String) The user's original request.
-- `plan`: (Array<RobotAction>) The full current sequence of actions.
+- `plan`: (Array<RobotAction>) The full current sequence of intended actions.
 - `currentStep`: (RobotAction | null) The single action currently being processed.
 - `completedSteps`: (Array<StepResult>) Audit log of finished actions and their outcomes.
 - `remainingSteps`: (Array<RobotAction>) Dynamic queue of pending actions.
+- `currentHTML`: (String | null) The pruned HTML source of the active page.
+- `candidates`: (Array<ElementCandidate>) List of elements extracted for the current intent.
 - `context`: (Object) Dynamic shared memory for step-to-step data passing.
 - `retryCount`: (Number) Counter for consecutive replan cycles (Limit: 5).
-- `reasoning`: (String) Internal explanation for the current plan or latest revision.
-- `status`: (String) `planning`, `executing`, `validating`, `revising`, `intervention`, `finished`.
+- `status`: (String) `planning`, `analyzing`, `clarifying`, `executing`, `validating`, `revising`, `intervention`, `finished`.
 
 ### Robot Action
+- `intent`: (String) Semantic description of what this step achieves.
 - `keyword`: (String) Robot Framework keyword.
+- `selector`: (String | null) The resolved CSS/XPath selector.
 - `args`: (Array) Arguments for the keyword.
-- `description`: (String) Human-readable explanation of this step.
+- `description`: (String) Human-readable explanation.
 
 ### Step Result
 - `action`: (RobotAction) The action that was executed.
@@ -25,40 +28,35 @@ The central state managed by LangGraph.js.
 - `output`: (any) Return data or extracted information.
 - `error`: (String | null) Technical error trace if status is `fail`.
 
-## Transitions (Unified State Flow)
+### Element Candidate (Analysis)
+- `tag`: (String) e.g., `button`.
+- `attributes`: (Object) id, class, text, data-testid, etc.
+- `selector`: (String) The generated CSS path for this candidate.
+- `confidence`: (Number) LLM score for intent matching.
+
+## Transitions (Integrated State Flow)
 
 ### 1. Planning Phase
-- **Trigger**: User Prompt received.
-- **Action**: `Planner` node generates initial `plan` and populates `remainingSteps`.
-- **State Update**: `status` set to `planning`.
+- `input` -> **Planner** -> `plan` and `remainingSteps`.
 
-### 2. Execution Loop (Step Initialization)
-- **Trigger**: `remainingSteps` is not empty.
-- **Action**: Pop the first item from `remainingSteps` and set as `currentStep`.
-- **State Update**: `status` set to `executing`.
+### 2. Queue & Context Phase
+- IF (`remainingSteps` not empty): Pop first -> `currentStep`.
 
-### 3. Robot Execution
-- **Trigger**: `currentStep` is assigned.
-- **Action**: Call Robot Bridge via CLI to execute the `keyword` and `args`.
-- **Outcome**: Capture `Step Result` (Pass/Fail + Output).
+### 3. Discovery Phase (Analysis)
+- IF (`currentStep` needs selector): 
+    - Fetch HTML -> `currentHTML`.
+    - **Analyzer** (Cheerio) -> populate `candidates`.
+    - LLM Score -> update `currentStep.selector`.
+    - IF Confidence < Threshold -> **Clarifier** (User input) -> update `currentStep.selector`.
 
-### 4. Validation Phase (Self-Evaluation)
-- **Trigger**: `Step Result` received.
-- **Action**: `Validator` node analyzes result against `input` intent.
-- **Logic**:
-    - **IF (Success AND Intent Match)**: Push `Step Result` to `completedSteps`, clear `currentStep`. Loop to **Step 2**.
-    - **IF (Fail OR Intent Mismatch)**: Push `Step Result` to `completedSteps`, increment `retryCount`. Loop to **Step 5**.
+### 4. Execution Phase
+- **Executor** runs `currentStep` via Robot Framework CLI -> `Step Result`.
 
-### 5. Replanning Phase (Revision)
-- **Trigger**: `retryCount` incremented.
-- **Action**: 
-    - **IF (retryCount < 5)**: `Reviser` node analyzes `completedSteps` and updates `remainingSteps`. Loop to **Step 2**.
-    - **IF (retryCount >= 5)**: Transition to **Step 6**.
-- **State Update**: `status` set to `revising`.
+### 5. Validation Phase
+- **Validator** checks semantic success.
+- IF Success: Push `Step Result` to `completedSteps` -> clear `currentStep` -> Loop to **Step 2**.
+- IF Failure: Push `Step Result` to `completedSteps` (marked fail) -> increment `retryCount` -> **Reviser**.
 
-### 6. Termination Phase
-- **Trigger**: `remainingSteps` empty (Success) OR `retryCount` exceeded (Fail).
-- **Action**:
-    - If Success: `Finalizer` node requests user verification and saves tool.
-    - If Failure: Transition to `intervention` status and request manual help.
-- **State Update**: `status` set to `finished` or `intervention`.
+### 6. Revision Phase
+- **Reviser** analyzes `completedSteps` + `currentHTML` -> updates `remainingSteps` -> Loop to **Step 2**.
+- IF `retryCount` >= 5: Transition to `intervention`.
