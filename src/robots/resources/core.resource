@@ -18,15 +18,17 @@ Wait For Element
 
 Click Element
     [Arguments]    ${selector}
-    Click    ${selector}    force=True
+    # 필수 인자인 selector는 위치 기반으로, 옵션인 force는 이름 기반으로 전달합니다.
+    # 인자 사이는 확실하게 4개의 공백으로 구분합니다.
+    Click With Options    ${selector}    force=True
 
 Type Into Element
     [Arguments]    ${selector}    ${text}
+    # Fill Text도 동일하게 필수 인자는 위치 기반으로 전달합니다.
     Fill Text    ${selector}    ${text}    force=True
 
 Press Enter
     [Arguments]    ${selector}
-    # Press enter on the specific element
     Focus    ${selector}
     Keyboard Key    press    Enter
 
@@ -38,7 +40,6 @@ Capture DOM Source
 
 Extract Element Data
     [Arguments]    ${selector}    ${filename}=result.txt
-    # Get all texts if multiple elements exist
     ${texts}=    Get Text    ${selector}
     Create File    ${OUTPUT DIR}${/}${filename}    ${texts}
     RETURN    ${texts}

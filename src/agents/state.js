@@ -4,7 +4,6 @@ export const AgentState = Annotation.Root({
   input: Annotation(),
   plan: Annotation(),
   currentStep: Annotation(),
-  // Use a reducer to ensure completedSteps always accumulates
   completedSteps: Annotation({
     reducer: (x, y) => x.concat(y),
     default: () => [],

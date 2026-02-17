@@ -1,65 +1,58 @@
-import { StorageService } from '../../services/storage_service.js';
 import fs from 'fs/promises';
+import path from 'path';
 import { extractAndParseJSON } from '../../lib/json_utils.js';
+import { StorageService } from '../../services/storage_service.js';
 
 export const planner = async (state, config) => {
   const logger = config.configurable.logger;
-  const input = state.input.toLowerCase();
-  
-  await logger.debug(`Planner: Analyzing input: ${state.input}`);
-  
-  // Direct tool execution (Legacy/Short-cut)
-  if ((input.startsWith('run tool ') || input.startsWith('use tool ')) && !input.includes(' and ')) {
-    const toolId = input.replace('run tool ', '').replace('use tool ', '').trim();
-    await logger.info(`Planner: Direct tool execution detected for: ${toolId}`);
-    const sequence = await StorageService.loadSequence(toolId);
-    return {
-      plan: sequence.actions,
-      remainingSteps: sequence.actions,
-      status: 'planning',
-      reasoning: `Loading saved tool: ${toolId}`
-    };
+  const model = config.configurable.model;
+
+  await logger.info('Router: Routing to Tool Making (Dynamic Planning)');
+
+  // Read all consolidated resources
+  const resourceDir = path.join(process.cwd(), 'src/robots/resources');
+  let keywordsInfo = "";
+  try {
+    const files = await fs.readdir(resourceDir);
+    for (const file of files) {
+      if (file.endsWith('.resource')) {
+        const content = await fs.readFile(path.join(resourceDir, file), 'utf8');
+        keywordsInfo += `\n--- Resource: ${file} ---\n${content}\n`;
+      }
+    }
+  } catch (e) {
+    await logger.error(`Planner: Failed to read resources: ${e.message}`);
   }
 
-  const model = config.configurable.model;
-  
   // List available tools to the planner
-  const toolsDir = './src/memory/sequences';
   let availableTools = [];
   try {
-    const files = await fs.readdir(toolsDir);
+    const files = await fs.readdir(StorageService.toolsDir);
     availableTools = files.filter(f => f.endsWith('.json')).map(f => f.replace('.json', ''));
   } catch (e) {
     // ignore
   }
 
-  await logger.debug(`Planner: Available tools: ${availableTools.join(', ')}`);
-
   const systemPrompt = `You are a web automation planner. 
 Decompose the user's request into a sequence of robot actions.
 
-### Available Keywords and Argument Rules:
-1. "Open Visible Browser" - Args: ["URL"] (URL MUST include protocol like https://)
-2. "Navigate To URL" - Args: ["URL"] (URL MUST include protocol like https://)
-3. "Wait For Element" - Intent: "What to wait for", Selector: null
-4. "Click Element" - Intent: "What to click", Args: [], Selector: null
-5. "Type Into Element" - Intent: "What to type into", Args: ["Text"], Selector: null
-6. "Press Enter" - Intent: "Submit or confirm", Selector: null
-7. "Capture DOM Source" - No args.
-8. "Extract Element Data" - Intent: "What to extract", Selector: null (Works for multiple elements at once).
-9. "Extract All Links" - Intent: "What links to extract", Selector: null.
+### AVAILABLE ROBOT RESOURCES:
+${keywordsInfo}
+
+### AVAILABLE TOOLS (PRE-VERIFIED SEQUENCES):
+${availableTools.join(', ') || 'None'}
 
 ### CRITICAL RULES:
-- Use ONLY the keyword names listed above. NO OTHER KEYWORDS.
-- For Click/Type/Wait/Extract/Press Enter, set "selector" to null. The Analyzer will resolve it.
-- If you type into a search bar, you MUST follow it with either "Click Element" on the search button OR "Press Enter" on the search bar.
-- Do NOT include the selector in the "args" array.
-- Respond ONLY with a JSON object in the format:
+1. Use ONLY the keywords defined in the resources above.
+2. Every step MUST include the exact "keyword" name and its "args" array.
+3. If an available TOOL exactly matches the user request, you can use the "Run Tool" keyword with the tool name as the first argument.
+
+Respond ONLY with a JSON object:
 {
   "plan": [
-    { "intent": "Semantic goal", "keyword": "Keyword Name", "args": ["arg1"], "selector": null }
+    { "intent": "Goal", "keyword": "Exact Keyword Name", "args": ["val1"] }
   ],
-  "reasoning": "Brief explanation"
+  "reasoning": "Why"
 }
 `;
 
@@ -69,27 +62,18 @@ Decompose the user's request into a sequence of robot actions.
   ]);
 
   const parsed = extractAndParseJSON(response.content);
-  await logger.info(`Planner: Plan generated with ${parsed.plan.length} steps.`);
-  await logger.debug(`Planner Reasoning: ${parsed.reasoning}`);
   
-  const sanitizedPlan = parsed.plan.map(step => ({
-    ...step,
-    args: Array.isArray(step.args) ? step.args : []
-  }));
-
-  // Expand "Run Tool" steps
   const expandedPlan = [];
-  for (const step of sanitizedPlan) {
+  for (const step of parsed.plan) {
     if (step.keyword === 'Run Tool') {
       const toolId = step.args[0];
-      await logger.debug(`Planner: Expanding tool: ${toolId}`);
       const sequence = await StorageService.loadSequence(toolId);
       expandedPlan.push(...sequence.actions);
     } else {
       expandedPlan.push(step);
     }
   }
-  
+
   return {
     plan: expandedPlan,
     remainingSteps: expandedPlan,

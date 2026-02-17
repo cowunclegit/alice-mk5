@@ -3,16 +3,17 @@ import path from 'path';
 
 export class StorageService {
   static baseDir = path.join(process.cwd(), 'src/memory');
+  static toolsDir = path.join(process.cwd(), 'src/robots/tools');
 
   static async saveSequence(sequence) {
-    const dir = path.join(this.baseDir, 'sequences');
+    const dir = this.toolsDir;
     await fs.mkdir(dir, { recursive: true });
     const filePath = path.join(dir, `${sequence.id}.json`);
     await fs.writeFile(filePath, JSON.stringify(sequence, null, 2));
   }
 
   static async loadSequence(id) {
-    const filePath = path.join(this.baseDir, 'sequences', `${id}.json`);
+    const filePath = path.join(this.toolsDir, `${id}.json`);
     const content = await fs.readFile(filePath, 'utf8');
     return JSON.parse(content);
   }

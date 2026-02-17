@@ -10,13 +10,27 @@ export class RobotBridge {
     
     const robotFile = path.join(sessionDir, `step-${stepNumber}.robot`);
     
+    // Find all resources in the new consolidated directory
+    const resourceDir = path.join(process.cwd(), 'src/robots/resources');
+    let allResources = [];
+    try {
+      const files = await fs.readdir(resourceDir);
+      // Ensure core.resource is loaded first or explicitly, 
+      // but here we just load everything in that folder.
+      allResources = files.filter(f => f.endsWith('.resource')).map(f => path.join(resourceDir, f));
+    } catch (e) {
+      // ignore
+    }
+
+    const resourceSettings = allResources.map(r => `Resource    ${r}`).join('\n');
+    
     let testSteps = '';
-    for (const action of actions) {
+    for (let i = 0; i < actions.length; i++) {
+      const action = actions[i];
       const { keyword, args = [] } = action;
       
       const safeArgs = Array.isArray(args) ? args.filter(a => a !== null && a !== undefined && a !== '') : [];
       
-      // Escape leading # to prevent them from being treated as comments in Robot Framework
       const escapedArgs = safeArgs.map(arg => {
         if (typeof arg === 'string' && arg.startsWith('#')) {
           return `\\${arg}`;
@@ -24,16 +38,20 @@ export class RobotBridge {
         return arg;
       });
       
-      const argsStr = escapedArgs.length > 0 
-        ? '    ' + escapedArgs.join('    ') 
-        : '';
-        
+      const argsStr = escapedArgs.length > 0 ? '    ' + escapedArgs.join('    ') : '';
       testSteps += `    ${keyword}${argsStr}\n`;
+
+      if (i < actions.length - 1) {
+        const delay = (Math.random() * (2.0 - 0.5) + 0.5).toFixed(2);
+        testSteps += `    Sleep    ${delay}s\n`;
+      }
     }
+
+    testSteps += `    Sleep    5s\n`;
 
     const content = `
 *** Settings ***
-Resource    ${path.join(process.cwd(), 'src/robots/core.resource')}
+${resourceSettings}
 
 *** Test Cases ***
 Step ${stepNumber} Execution

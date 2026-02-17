@@ -1,0 +1,21 @@
+{
+  "id": "naver-ai",
+  "actions": [
+    {
+      "intent": "Search for AI on Naver",
+      "keyword": "Search Naver",
+      "args": [
+        "AI"
+      ]
+    },
+    {
+      "intent": "Click the News tab",
+      "keyword": "Click Naver News Tab",
+      "args": []
+    }
+  ],
+  "metadata": {
+    "prompt": "naver에서 AI 검색하고 뉴스 탭 눌러줘",
+    "createdAt": "2026-02-17T23:33:24.113Z"
+  }
+}
