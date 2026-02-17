@@ -1,6 +1,8 @@
 import { graph } from '../agents/graph.js';
 import { ConfigService } from '../services/config_service.js';
 import { GeminiChatModel } from '../agents/models/gemini_model.js';
+import { Logger } from '../services/logger.js';
+import crypto from 'crypto';
 
 const run = async () => {
   const prompt = process.argv[2];
@@ -10,7 +12,10 @@ const run = async () => {
   }
 
   const config = await ConfigService.load();
+  const logger = new Logger(config.logging);
+  await logger.init();
   const verbosity = config.logging?.verbosity || 'info';
+  const sessionId = crypto.randomBytes(4).toString('hex');
 
   const model = new GeminiChatModel({ 
     apiKey: config.llm.apiKey,
@@ -23,15 +28,19 @@ const run = async () => {
     remainingSteps: [],
     context: { verbosity },
     retryCount: 0,
-    status: 'idle'
+    status: 'idle',
+    sessionId: sessionId
   };
 
-  console.log(`에이전트를 시작합니다. 프롬프트: "${prompt}"`);
+  await logger.info(`에이전트를 시작합니다. 프롬프트: "${prompt}"`);
   
-  const result = await graph.invoke(initialState, { configurable: { model } });
+  const result = await graph.invoke(initialState, { 
+    configurable: { model, logger },
+    recursionLimit: 100 // Increased from default 25
+  });
   
-  console.log('실행이 완료되었습니다.');
-  console.log('완료된 단계 수:', result.completedSteps.length);
+  await logger.info('실행이 완료되었습니다.');
+  await logger.info(`완료된 단계 수: ${result.completedSteps.length}`);
 };
 
 run().catch(err => {

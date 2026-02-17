@@ -1,14 +1,32 @@
+import { extractAndParseJSON } from '../../lib/json_utils.js';
+
 export const reviser = async (state, config) => {
+  const logger = config.configurable.logger;
   const model = config.configurable.model;
   
+  await logger.info(`Reviser: Attempting to recover from failure. Attempt ${state.retryCount + 1}/5`);
+
   const systemPrompt = `You are a web automation reviser.
-A step in the plan has failed. Analyze the completed steps and the original intent, and revise the REMAINING steps to achieve the goal.
-Respond ONLY with a JSON object in the format:
+A step has failed. Analyze history and original intent to fix the REMAINING plan.
+
+### Available Keywords:
+1. "Open Visible Browser" - Args: ["URL"] (URL MUST include https://)
+2. "Navigate To URL" - Args: ["URL"] (URL MUST include https://)
+3. "Wait For Element" - Intent: "Goal", Selector: null
+4. "Click Element" - Intent: "Goal", Args: [], Selector: null
+5. "Type Into Element" - Intent: "Goal", Args: ["Text"], Selector: null
+6. "Capture DOM Source" - No args.
+7. "Extract Element Data" - Intent: "Goal", Selector: null.
+
+### CRITICAL RULES:
+- Use ONLY the keyword names above.
+- If a selector failed, do NOT hardcode a new one unless you are 100% sure. Set "selector" to null to let the Analyzer re-try discovery.
+- Respond ONLY with a JSON object:
 {
   "revisedRemainingSteps": [
-    { "intent": "Description", "keyword": "Keyword Name", "args": ["arg1"], "selector": "optional" }
+    { "intent": "Goal", "keyword": "Keyword Name", "args": ["arg1"], "selector": null }
   ],
-  "reasoning": "Brief explanation of why the change was made"
+  "reasoning": "Why"
 }
 `;
 
@@ -22,7 +40,9 @@ Original Remaining Steps: ${JSON.stringify(state.remainingSteps)}
     { role: 'user', content: userPrompt }
   ]);
 
-  const parsed = JSON.parse(response.content);
+  const parsed = extractAndParseJSON(response.content);
+  await logger.info(`Reviser: Revised plan with ${parsed.revisedRemainingSteps.length} steps.`);
+  await logger.debug(`Reviser Reasoning: ${parsed.reasoning}`);
   
   return {
     remainingSteps: parsed.revisedRemainingSteps,

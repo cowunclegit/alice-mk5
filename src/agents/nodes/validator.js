@@ -1,7 +1,12 @@
+import { extractAndParseJSON } from '../../lib/json_utils.js';
+
 export const validator = async (state, config) => {
+  const logger = config.configurable.logger;
   const model = config.configurable.model;
   const lastResult = state.context.lastResult;
   const completed = state.completedSteps || [];
+
+  await logger.debug(`Validator: Evaluating last step outcome.`);
 
   const systemPrompt = `You are a web automation validator.
 Given the original user intent, the action performed, and the execution result, determine if the goal was met.
@@ -22,8 +27,14 @@ Execution Result: ${JSON.stringify(lastResult)}
     { role: 'user', content: userPrompt }
   ]);
 
-  const parsed = JSON.parse(response.content);
+  const parsed = extractAndParseJSON(response.content);
   
+  if (parsed.success) {
+    await logger.info(`Validator: Intent fulfilled.`);
+  } else {
+    await logger.info(`Validator: Intent NOT fulfilled. Reason: ${parsed.reasoning}`);
+  }
+
   const stepResult = {
     action: state.currentStep,
     result: lastResult,

@@ -8,16 +8,14 @@ import { clarifier } from "./nodes/clarifier.js";
 import { finalizer } from "./nodes/finalizer.js";
 import { reviser } from "./nodes/reviser.js";
 import { RobotBridge } from "../services/robot_bridge.js";
+import fs from 'fs/promises';
+import path from 'path';
 
 const shouldContinue = (state) => {
-  // Check for failures requiring revision
   const lastStep = state.completedSteps[state.completedSteps.length - 1];
-  if (lastStep.status === 'fail') {
-    if (state.retryCount < 5) {
-      return "reviser";
-    } else {
-      return "finalizer"; // Transition to intervention
-    }
+  if (lastStep && lastStep.status === 'fail') {
+    if (state.retryCount < 5) return "reviser";
+    return "finalizer";
   }
 
   if (state.remainingSteps && state.remainingSteps.length > 0) {
@@ -36,16 +34,45 @@ const initializeStep = (state) => {
   };
 };
 
-const captureDom = async (state) => {
-  // Only capture if we need a selector or if it's the first step
-  if (!state.currentStep.selector) {
-    const result = await RobotBridge.runKeyword('Capture DOM Source', []);
+const captureDom = async (state, config) => {
+  const logger = config.configurable.logger;
+  const browserKeywords = ['Open Visible Browser', 'Navigate To URL'];
+  const isSetupStep = browserKeywords.includes(state.currentStep.keyword);
+
+  if (!state.currentStep.selector && !state.currentHTML && !isSetupStep) {
+    await logger.info('Graph: Capturing DOM for element discovery...');
+    
+    // Helper to map an action to robot-friendly args (Consistent with Executor)
+    const mapToAction = (step) => {
+      const sBrowser = ['Open Visible Browser', 'Navigate To URL', 'Capture DOM Source'].includes(step.keyword);
+      const sValidSel = step.selector && typeof step.selector === 'string' && step.selector.trim() !== '' && step.selector.toLowerCase() !== 'null';
+      const sArgs = Array.isArray(step.args) ? step.args : [];
+      return {
+        keyword: step.keyword,
+        args: (sValidSel && !sBrowser) ? [step.selector, ...sArgs] : sArgs
+      };
+    };
+
+    const historyActions = state.completedSteps.filter(s => s.status === 'pass').map(s => mapToAction(s.action));
+    
+    const result = await RobotBridge.runSequence([
+      ...historyActions,
+      { keyword: 'Capture DOM Source', args: ['dom.html'] }
+    ], state.completedSteps.length + 1, state.sessionId);
+
+    let html = '';
+    try {
+      html = await fs.readFile(path.join(result.tempDir, 'dom.html'), 'utf8');
+    } catch (e) {
+      await logger.error(`Graph: Failed to read captured DOM: ${e.message}`);
+    }
+
     return {
-      currentHTML: result.stdout,
+      currentHTML: html,
       status: 'analyzing'
     };
   }
-  return { status: 'executing' };
+  return { status: 'analyzing' };
 };
 
 const workflow = new StateGraph(AgentState)

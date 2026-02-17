@@ -4,34 +4,41 @@ import path from 'path';
 import os from 'os';
 
 export class RobotBridge {
-  static async runKeyword(keyword, args = []) {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'robot-'));
-    const robotFile = path.join(tempDir, 'task.robot');
+  static async runSequence(actions, stepNumber = 1, sessionId = 'unknown') {
+    const sessionDir = path.join(process.cwd(), 'tmp_robot', `session-${sessionId}`);
+    await fs.mkdir(sessionDir, { recursive: true });
     
-    const argsStr = args.map(arg => {
-      if (typeof arg === 'string') {
-        return `    ${arg}`;
-      }
-      return `    ${JSON.stringify(arg)}`;
-    }).join('');
+    const robotFile = path.join(sessionDir, `step-${stepNumber}.robot`);
+    
+    let testSteps = '';
+    for (const action of actions) {
+      const { keyword, args = [] } = action;
+      
+      // Filter out null/undefined/empty string arguments
+      const safeArgs = Array.isArray(args) ? args.filter(a => a !== null && a !== undefined && a !== '') : [];
+      
+      // CRITICAL: Robot Framework requires 2+ spaces (using 4 for safety) to separate keyword and each argument.
+      const argsStr = safeArgs.length > 0 
+        ? '    ' + safeArgs.join('    ') 
+        : '';
+        
+      testSteps += `    ${keyword}${argsStr}\n`;
+    }
 
     const content = `
 *** Settings ***
 Resource    ${path.join(process.cwd(), 'src/robots/core.resource')}
 
 *** Test Cases ***
-Execute Dynamic Keyword
-    ${keyword}${argsStr}
+Step ${stepNumber} Execution
+${testSteps}
 `;
 
     await fs.writeFile(robotFile, content);
 
-    // Human-like delay
-    const delay = Math.random() * (2000 - 500) + 500; // 0.5s to 2.0s
-    await new Promise(resolve => setTimeout(resolve, delay));
-
-    return new Promise((resolve, reject) => {
-      const robotProcess = spawn('robot', ['--outputdir', tempDir, robotFile]);
+    return new Promise((resolve) => {
+      const outputDir = path.join(sessionDir, `logs-step-${stepNumber}`);
+      const robotProcess = spawn('robot', ['--outputdir', outputDir, robotFile]);
       let stdout = '';
       let stderr = '';
 
@@ -44,14 +51,17 @@ Execute Dynamic Keyword
       });
 
       robotProcess.on('close', (code) => {
-        const result = {
+        resolve({
           status: code === 0 ? 'pass' : 'fail',
           stdout,
           stderr,
-          tempDir
-        };
-        resolve(result);
+          tempDir: outputDir
+        });
       });
     });
+  }
+
+  static async runKeyword(keyword, args = []) {
+    return this.runSequence([{ keyword, args }]);
   }
 }

@@ -1,5 +1,6 @@
 *** Settings ***
 Library    Browser
+Library    OperatingSystem
 
 *** Keywords ***
 Open Visible Browser
@@ -12,22 +13,26 @@ Navigate To URL
     Go To          ${url}
 
 Wait For Element
-    [Arguments]    ${selector}    ${timeout}=10s
+    [Arguments]    ${selector}    ${timeout}=30s
     Wait For Elements State    ${selector}    visible    timeout=${timeout}
 
-Interact With Element
-    [Arguments]    ${action}    ${selector}    ${value}=${EMPTY}
-    IF    '${action}' == 'click'
-        Click    ${selector}
-    ELSE IF    '${action}' == 'type'
-        Fill Text    ${selector}    ${value}
-    END
+Click Element
+    [Arguments]    ${selector}
+    Click    ${selector}
+
+Type Into Element
+    [Arguments]    ${selector}    ${text}
+    Fill Text    ${selector}    ${text}
 
 Capture DOM Source
+    [Arguments]    ${output_path}=dom.html
     ${html}=    Get Property    body    innerHTML
-    [Return]    ${html}
+    # Save to file because stdout capture is unreliable for large HTML
+    Create File    ${output_path}    ${html}
+    RETURN    ${html}
 
 Extract Element Data
-    [Arguments]    ${selector}
+    [Arguments]    ${selector}    ${output_path}=result.txt
     ${text}=    Get Text    ${selector}
-    [Return]    ${text}
+    Create File    ${output_path}    ${text}
+    RETURN    ${text}

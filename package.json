@@ -26,7 +26,8 @@
     "@langchain/langgraph": "^1.1.4",
     "cheerio": "^1.2.0",
     "js-yaml": "^4.1.1",
-    "langchain": "^1.2.24"
+    "langchain": "^1.2.24",
+    "playwright": "^1.58.2"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

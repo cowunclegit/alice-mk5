@@ -1,0 +1,13 @@
+llm:
+  apiKey: "AIzaSyCapb7EgLKVm_BQXrY-OwpsHTo8KQoSfB0"
+  model: "gemini-2.0-flash"
+automation:
+  browser: "chromium"
+  headless: false
+  delay:
+    min: 0.5
+    max: 2.0
+logging:
+  retentionLimit: 50
+  verbosity: "debug"  # quiet, info, debug
+  filePath: "logs/agent.log" # Optional: set to null to disable file logging

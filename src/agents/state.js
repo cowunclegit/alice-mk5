@@ -12,4 +12,5 @@ export const AgentState = Annotation.Root({
   retryCount: Annotation(),
   status: Annotation(),
   reasoning: Annotation(),
+  sessionId: Annotation(),
 });
