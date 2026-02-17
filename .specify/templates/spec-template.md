@@ -84,11 +84,11 @@
 
 ### Functional Requirements
 
-- **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
-- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
-- **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
-- **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
-- **FR-005**: System MUST [behavior, e.g., "log all security events"]
+- **FR-001**: System MUST be implemented using **Node.js and JavaScript (ESM)** only.
+- **FR-002**: Agents MUST utilize **LangGraph.js** for stateful orchestration.
+- **FR-003**: Automation and side effects MUST be implemented via **Robot Framework**.
+- **FR-004**: Implementation MUST follow **TDD** (Tests written and failing before code).
+- **FR-005**: [specific capability, e.g., "allow users to create accounts"]
 
 *Example of marking unclear requirements:*
 
