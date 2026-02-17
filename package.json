@@ -1,0 +1,35 @@
+{
+  "name": "alice-mk5",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cowunclegit/alice-mk5.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/cowunclegit/alice-mk5/issues"
+  },
+  "homepage": "https://github.com/cowunclegit/alice-mk5#readme",
+  "dependencies": {
+    "@langchain/core": "^1.1.24",
+    "@langchain/langgraph": "^1.1.4",
+    "cheerio": "^1.2.0",
+    "js-yaml": "^4.1.1",
+    "langchain": "^1.2.24"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.2.0"
+  }
+}

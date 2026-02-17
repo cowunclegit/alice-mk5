@@ -1,0 +1,17 @@
+{
+  "id": "y",
+  "actions": [
+    {
+      "intent": "Open browser",
+      "keyword": "Open Visible Browser",
+      "args": [
+        "https://example.com"
+      ],
+      "selector": "body"
+    }
+  ],
+  "metadata": {
+    "prompt": "Open example.com",
+    "createdAt": "2026-02-17T20:57:19.989Z"
+  }
+}

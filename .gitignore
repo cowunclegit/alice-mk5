@@ -1,0 +1,23 @@
+# Node.js
+node_modules/
+dist/
+build/
+*.log
+.env*
+coverage/
+
+# Robot Framework
+results/
+report.html
+log.html
+output.xml
+browser/
+browser_state.json
+
+# Universal
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/

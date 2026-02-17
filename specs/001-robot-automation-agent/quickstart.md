@@ -11,6 +11,15 @@
 node src/cli/index.js "Find the latest post on example.com and click its title"
 ```
 
+## Reusing Tools
+To run a previously saved tool:
+```bash
+node src/cli/index.js "run tool [tool-id]"
+```
+
+## Note on Language
+The agent supports Korean for CLI prompts and descriptions. Original user intent can be provided in Korean.
+
 ## Integrated Flow
 1. **Planner**: Creates the step sequence.
 2. **Analyzer**: (New) Reads the page HTML via Cheerio to find the right elements.
