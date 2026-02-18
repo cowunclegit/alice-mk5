@@ -1,5 +1,3 @@
 {
-  "naver.resource": ["naver", "네이버", "naver.com", "네이버검색"],
-  "google.resource": ["google", "구글", "google.com", "구글검색"],
-  "github.resource": ["github", "깃허브", "깃헙", "github.com"]
+  "naver.resource": ["naver", "네이버", "naver.com", "네이버검색"]
 }

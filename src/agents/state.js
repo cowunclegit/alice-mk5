@@ -23,4 +23,10 @@ export const AgentState = Annotation.Root({
     reducer: (x, y) => Array.from(new Set([...x, ...y])),
     default: () => ["core.resource"],
   }),
+  activeToolId: Annotation(),
+  // Field to track all files extracted in the current session
+  extractedFiles: Annotation({
+    reducer: (x, y) => x.concat(y),
+    default: () => [],
+  }),
 });

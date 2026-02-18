@@ -34,6 +34,7 @@ export const toolLoader = async (state, config) => {
       plan: sequence.actions,
       remainingSteps: sequence.actions,
       selectedResources: selected,
+      activeToolId: toolId, // Set tool ID for naming
       status: 'executing',
       reasoning: `Executing verified tool: ${toolId}`
     };

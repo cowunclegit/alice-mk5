@@ -12,10 +12,17 @@
       "intent": "Click the News tab",
       "keyword": "Click Naver News Tab",
       "args": []
+    },
+    {
+      "intent": "Extract results to json",
+      "keyword": "Extract Naver News Results",
+      "args": [
+        "result.json"
+      ]
     }
   ],
   "metadata": {
-    "prompt": "naver에서 AI 검색하고 뉴스 탭 눌러줘",
-    "createdAt": "2026-02-17T23:33:24.113Z"
+    "prompt": "naver에서 AI 검색하고 뉴스 탭 눌러서 결과 모두 저장해줘",
+    "createdAt": "2026-02-18T14:10:00.000Z"
   }
 }
