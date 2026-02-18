@@ -23,6 +23,9 @@ const shouldContinue = (state) => {
 };
 
 const initializeStep = (state) => {
+  if (!state.remainingSteps || state.remainingSteps.length === 0) {
+    return { currentStep: null, status: 'finished' };
+  }
   const nextStep = state.remainingSteps[0];
   const remaining = state.remainingSteps.slice(1);
   return {

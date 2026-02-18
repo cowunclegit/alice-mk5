@@ -42,6 +42,13 @@ ${keywordsInfo}
 ### AVAILABLE TOOLS (PRE-VERIFIED SEQUENCES):
 ${availableTools.join(', ') || 'None'}
 
+### CORE UTILITY KEYWORDS:
+- "Wait For Element" - Args: ["selector"]
+- "Click Element" - Args: ["selector"]
+- "Extract Element Data" - Args: ["selector"]
+- "Scrape List Data" - Args: ["selector", "filename"] (Extracts text and links from multiple elements at once)
+- "Capture DOM Source" - No args.
+
 ### CRITICAL RULES:
 1. Use ONLY the keywords defined in the resources above.
 2. Every step MUST include the exact "keyword" name and its "args" array.

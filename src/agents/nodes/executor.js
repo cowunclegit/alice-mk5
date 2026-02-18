@@ -2,6 +2,15 @@ import { RobotBridge } from '../../services/robot_bridge.js';
 
 export const executor = async (state, config) => {
   const logger = config.configurable.logger;
+  
+  if (!state.currentStep) {
+    await logger.error('Executor: No currentStep found in state. Aborting.');
+    return {
+      status: 'error',
+      context: { ...state.context, lastResult: { status: 'fail', stderr: 'No action to execute.' } }
+    };
+  }
+
   const { keyword, args } = state.currentStep;
   
   await logger.info(`Executor: Running current session sequence up to "${keyword}".`);

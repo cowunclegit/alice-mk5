@@ -1,0 +1,28 @@
+{
+  "id": "naver-search-samsung-save",
+  "actions": [
+    {
+      "intent": "Search for Samsung on Naver",
+      "keyword": "Search Naver",
+      "args": [
+        "삼성전자"
+      ]
+    },
+    {
+      "intent": "Click the News tab",
+      "keyword": "Click Naver News Tab",
+      "args": []
+    },
+    {
+      "intent": "Extract news results",
+      "keyword": "Extract Naver News Results",
+      "args": [
+        "result.txt"
+      ]
+    }
+  ],
+  "metadata": {
+    "prompt": "naver에서 삼성전자 검색하고 뉴스 탭 눌러주고 뉴스 결과를 추출해서 저장해줘",
+    "createdAt": "2026-02-18T00:02:50.034Z"
+  }
+}

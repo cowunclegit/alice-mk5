@@ -1,6 +1,7 @@
 *** Settings ***
 Library    Browser    strict=False
 Library    OperatingSystem
+Library    Collections
 
 *** Keywords ***
 Open Visible Browser
@@ -18,13 +19,10 @@ Wait For Element
 
 Click Element
     [Arguments]    ${selector}
-    # 필수 인자인 selector는 위치 기반으로, 옵션인 force는 이름 기반으로 전달합니다.
-    # 인자 사이는 확실하게 4개의 공백으로 구분합니다.
     Click With Options    ${selector}    force=True
 
 Type Into Element
     [Arguments]    ${selector}    ${text}
-    # Fill Text도 동일하게 필수 인자는 위치 기반으로 전달합니다.
     Fill Text    ${selector}    ${text}    force=True
 
 Press Enter
@@ -43,6 +41,27 @@ Extract Element Data
     ${texts}=    Get Text    ${selector}
     Create File    ${OUTPUT DIR}${/}${filename}    ${texts}
     RETURN    ${texts}
+
+Scrape List Data
+    [Arguments]    ${selector}    ${filename}=result.json
+    [Documentation]    Extracts text and href from all elements and saves as JSON.
+    Wait For Element    ${selector}
+    ${elements}=    Get Elements    ${selector}
+    ${results}=     Create List
+    
+    FOR    ${el}    IN    @{elements}
+        ${text}=    Get Text    ${el}
+        ${link}=    Evaluate JavaScript    ${el}    (el) => el.href || ""
+        
+        ${item}=    Create Dictionary    text=${text}    link=${link}
+        Append To List    ${results}    ${item}
+    END
+    
+    # Convert list of dictionaries to JSON string using Python
+    ${json_string}=    Evaluate    json.dumps($results, ensure_ascii=False, indent=2)    json
+    
+    Create File    ${OUTPUT DIR}${/}${filename}    ${json_string}
+    RETURN    ${json_string}
 
 Extract All Links
     [Arguments]    ${selector}    ${filename}=links.txt

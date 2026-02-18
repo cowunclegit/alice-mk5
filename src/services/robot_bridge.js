@@ -47,7 +47,7 @@ export class RobotBridge {
       }
     }
 
-    testSteps += `    Sleep    5s\n`;
+    testSteps += `    Sleep    2s\n`;
 
     const content = `
 *** Settings ***
