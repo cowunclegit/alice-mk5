@@ -19,4 +19,8 @@ export const AgentState = Annotation.Root({
   status: Annotation(),
   reasoning: Annotation(),
   sessionId: Annotation(),
+  selectedResources: Annotation({
+    reducer: (x, y) => Array.from(new Set([...x, ...y])),
+    default: () => ["core.resource"],
+  }),
 });

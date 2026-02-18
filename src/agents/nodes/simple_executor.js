@@ -10,7 +10,7 @@ export const simpleExecutor = async (state, config) => {
     args: step.args || []
   }));
 
-  const result = await RobotBridge.runSequence(sessionActions, 1, state.sessionId);
+  const result = await RobotBridge.runSequence(sessionActions, 1, state.sessionId, state.selectedResources);
   
   const completed = sessionActions.map(a => ({ action: a, result, status: result.status }));
 

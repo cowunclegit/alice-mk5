@@ -4,37 +4,26 @@ import path from 'path';
 import os from 'os';
 
 export class RobotBridge {
-  static async runSequence(actions, stepNumber = 1, sessionId = 'unknown') {
+  static async runSequence(actions, stepNumber = 1, sessionId = 'unknown', selectedResources = ['core.resource']) {
     const sessionDir = path.join(process.cwd(), 'tmp_robot', `session-${sessionId}`);
     await fs.mkdir(sessionDir, { recursive: true });
     
     const robotFile = path.join(sessionDir, `step-${stepNumber}.robot`);
     
-    // Find all resources in the new consolidated directory
+    // Only include resources that were selected by the agent
     const resourceDir = path.join(process.cwd(), 'src/robots/resources');
-    let allResources = [];
-    try {
-      const files = await fs.readdir(resourceDir);
-      // Ensure core.resource is loaded first or explicitly, 
-      // but here we just load everything in that folder.
-      allResources = files.filter(f => f.endsWith('.resource')).map(f => path.join(resourceDir, f));
-    } catch (e) {
-      // ignore
-    }
-
-    const resourceSettings = allResources.map(r => `Resource    ${r}`).join('\n');
+    const resourceSettings = selectedResources
+      .map(r => `Resource    ${path.join(resourceDir, r)}`)
+      .join('\n');
     
     let testSteps = '';
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i];
       const { keyword, args = [] } = action;
-      
       const safeArgs = Array.isArray(args) ? args.filter(a => a !== null && a !== undefined && a !== '') : [];
       
       const escapedArgs = safeArgs.map(arg => {
-        if (typeof arg === 'string' && arg.startsWith('#')) {
-          return `\\${arg}`;
-        }
+        if (typeof arg === 'string' && arg.startsWith('#')) return `\\${arg}`;
         return arg;
       });
       
@@ -47,7 +36,7 @@ export class RobotBridge {
       }
     }
 
-    testSteps += `    Sleep    2s\n`;
+    testSteps += `    Sleep    5s\n`;
 
     const content = `
 *** Settings ***
@@ -66,13 +55,8 @@ ${testSteps}
       let stdout = '';
       let stderr = '';
 
-      robotProcess.stdout.on('data', (data) => {
-        stdout += data.toString();
-      });
-
-      robotProcess.stderr.on('data', (data) => {
-        stderr += data.toString();
-      });
+      robotProcess.stdout.on('data', (data) => { stdout += data.toString(); });
+      robotProcess.stderr.on('data', (data) => { stderr += data.toString(); });
 
       robotProcess.on('close', (code) => {
         resolve({
@@ -85,7 +69,7 @@ ${testSteps}
     });
   }
 
-  static async runKeyword(keyword, args = []) {
-    return this.runSequence([{ keyword, args }]);
+  static async runKeyword(keyword, args = [], sessionId = 'unknown', selectedResources = ['core.resource']) {
+    return this.runSequence([{ keyword, args }], 1, sessionId, selectedResources);
   }
 }
