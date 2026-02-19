@@ -1,27 +1,36 @@
 import { jest } from '@jest/globals';
-import { reviser } from '../../src/agents/nodes/reviser.js';
+
+const { reviser } = await import('../../src/agents/nodes/reviser.js');
 
 describe('Reviser Node', () => {
+  const mockLogger = {
+    info: jest.fn(),
+    debug: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn()
+  };
+
   it('should revise the plan on failure', async () => {
     const mockModel = {
       invoke: jest.fn(() => Promise.resolve({
         content: JSON.stringify({
           revisedRemainingSteps: [
-            { intent: 'Try again with different selector', keyword: 'Click', selector: '#alt-id', args: [] }
+            { intent: 'Wait and retry', keyword: 'Wait For Element', args: ['#id'] }
           ],
-          reasoning: 'Original element missing'
+          reasoning: 'Element was missing'
         })
       }))
     };
 
     const state = {
-      input: 'Click login',
-      completedSteps: [{ action: { intent: 'Click login' }, status: 'fail', error: 'Element not found' }],
+      input: 'Click search',
+      completedSteps: [{ action: { keyword: 'Click', intent: 'Click search' }, status: 'fail' }],
       remainingSteps: [],
-      retryCount: 0
+      retryCount: 0,
+      snapshot: 'Mock Snapshot'
     };
 
-    const result = await reviser(state, { configurable: { model: mockModel } });
+    const result = await reviser(state, { configurable: { model: mockModel, logger: mockLogger } });
     
     expect(result.remainingSteps).toHaveLength(1);
     expect(result.retryCount).toBe(1);

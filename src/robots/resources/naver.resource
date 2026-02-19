@@ -10,7 +10,7 @@ Search Naver
 
 Click Naver News Tab
     [Documentation]    Clicks the "News" tab on the Naver search results page.
-    ${selector}=    Set Variable    a.tab[role="tab"]:has-text("뉴스")
+    ${selector}=    Set Variable    xpath=//a[contains(@class, "tab") and contains(., "뉴스")]
     Wait For Element    ${selector}
     Click Element       ${selector}
 

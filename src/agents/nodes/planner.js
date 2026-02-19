@@ -7,7 +7,7 @@ export const planner = async (state, config) => {
   const logger = config.configurable.logger;
   const model = config.configurable.model;
 
-  await logger.info('Planner: Creating plan using selected resources.');
+  await logger.info('Planner: Creating plan using ROLE Snapshot.');
 
   // Read only selected resources
   const resourceDir = path.join(process.cwd(), 'src/robots/resources');
@@ -23,7 +23,7 @@ export const planner = async (state, config) => {
     }
   }
 
-  // List available tools to the planner
+  // List available tools
   let availableTools = [];
   try {
     const files = await fs.readdir(StorageService.toolsDir);
@@ -32,8 +32,12 @@ export const planner = async (state, config) => {
     // ignore
   }
 
+  const snapshot = state.snapshot || "No snapshot available.";
+
   const systemPrompt = `You are a web automation planner. 
 Decompose the user's request into a sequence of robot actions.
+
+${snapshot}
 
 ### AVAILABLE ROBOT RESOURCES:
 ${keywordsInfo}
@@ -42,9 +46,11 @@ ${keywordsInfo}
 ${availableTools.join(', ') || 'None'}
 
 ### CRITICAL RULES:
-1. Use ONLY the keywords defined in the resources above.
+1. Use ONLY the exact keyword names defined in the resources above. DO NOT include the resource filename (e.g., "core.resource.") as a prefix.
 2. Every step MUST include the exact "keyword" name and its "args" array.
-3. If an available TOOL exactly matches the user request, you can use the "Run Tool" keyword with the tool name as the first argument.
+3. Use [ref=eX] identifiers from the PERCEIVED UI STATE for element-based keywords.
+   Example: "Click Element" - Args: ["e1"]
+4. If an available TOOL exactly matches the user request, you can use the "Run Tool" keyword with the tool name as the first argument.
 
 Respond ONLY with a JSON object:
 {
@@ -57,7 +63,7 @@ Respond ONLY with a JSON object:
 
   const response = await model.invoke([
     { role: 'system', content: systemPrompt },
-    { role: 'user', content: state.input }
+    { role: 'user', content: `Current Task: ${state.input}` }
   ]);
 
   const parsed = extractAndParseJSON(response.content);
@@ -76,8 +82,9 @@ Respond ONLY with a JSON object:
   return {
     plan: expandedPlan,
     remainingSteps: expandedPlan,
-    completedSteps: [],
-    context: {},
+    // Note: completedSteps and context are managed by reducers, 
+    // so we only return new values if we want to reset them.
+    // In this node, we usually don't want to reset them unless it's a completely new turn.
     status: 'planning',
     reasoning: parsed.reasoning
   };

@@ -4,6 +4,7 @@ export const AgentState = Annotation.Root({
   input: Annotation(),
   plan: Annotation(),
   currentStep: Annotation(),
+  // Use a reducer to ensure completedSteps always accumulates
   completedSteps: Annotation({
     reducer: (x, y) => x.concat(y),
     default: () => [],
@@ -21,7 +22,7 @@ export const AgentState = Annotation.Root({
   sessionId: Annotation(),
   selectedResources: Annotation({
     reducer: (x, y) => Array.from(new Set([...x, ...y])),
-    default: () => ["core.resource"],
+    default: () => ["core.resource", "ax.resource"],
   }),
   activeToolId: Annotation(),
   // Field to track all files extracted in the current session
@@ -29,4 +30,11 @@ export const AgentState = Annotation.Root({
     reducer: (x, y) => x.concat(y),
     default: () => [],
   }),
+  // Optimization fields
+  axTree: Annotation(),
+  refMap: Annotation({
+    reducer: (x, y) => ({ ...x, ...y }),
+    default: () => ({}),
+  }),
+  snapshot: Annotation(),
 });

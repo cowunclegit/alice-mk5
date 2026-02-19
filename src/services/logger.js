@@ -57,7 +57,11 @@ export class Logger {
     await this.log(message, 'info');
   }
 
+  async warn(message) {
+    await this.log(message, 'info');
+  }
+
   async error(message) {
-    await this.log(message, 'quiet'); // Always log errors
+    await this.log(message, 'quiet');
   }
 }

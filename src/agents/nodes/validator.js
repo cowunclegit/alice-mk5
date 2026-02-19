@@ -1,56 +1,68 @@
 import { extractAndParseJSON } from '../../lib/json_utils.js';
 
+/**
+ * Performs semantic verification of an action using the latest AXTREE.
+ * @param {Object} state 
+ * @param {Object} config 
+ * @returns {Object} Updated state
+ */
 export const validator = async (state, config) => {
   const logger = config.configurable.logger;
   const model = config.configurable.model;
-  const lastResult = state.context.lastResult;
-  const completed = state.completedSteps || [];
+  
+  const lastStep = state.completedSteps[state.completedSteps.length - 1];
+  const axTreeText = state.axTree?.serialized || "No UI state available.";
 
-  await logger.debug(`Validator: Evaluating last step outcome.`);
+  await logger.info(`Validator: Performing semantic verification for "${lastStep.action.keyword}"...`);
 
   const systemPrompt = `You are a web automation validator.
-Given the original user intent, the action performed, and the execution result, determine if the goal was met.
+Evaluate if the last action successfully fulfilled its intent based on the updated UI state.
+
+### CONTEXT
+- **Goal**: ${state.input}
+- **Last Action**: ${lastStep.action.keyword} (${lastStep.action.intent})
+- **Updated UI State (AXTREE)**:
+${axTreeText}
 
 ### CRITICAL RULES:
-- If the action was "Press Enter" or "Click" to submit a search, verify that the browser actually navigated or the state changed.
-- If navigation failed or was skipped, the intent is NOT fulfilled.
-- If the result text is empty but the user wanted data, the intent is NOT fulfilled.
+1. Determine if the action worked as intended (e.g., if clicking "Search" resulted in a results page).
+2. If the UI state indicates failure (e.g., error message visible, page didn't change), mark as success: false.
+3. If the entire goal has been met, explicitly mention it in the reasoning.
 
-Respond ONLY with a JSON object in the format:
+Respond ONLY with a JSON object:
 {
   "success": true/false,
+  "intentMet": true/false, // Whether the ENTIRE user goal is now complete
   "reasoning": "Brief explanation"
 }
 `;
 
-  const userPrompt = `Intent: ${state.input}
-Action Intent: ${state.currentStep.intent}
-Execution Result: ${JSON.stringify(lastResult)}
-`;
-
   const response = await model.invoke([
     { role: 'system', content: systemPrompt },
-    { role: 'user', content: userPrompt }
+    { role: 'user', content: "Evaluate the outcome." }
   ]);
 
   const parsed = extractAndParseJSON(response.content);
   
+  // We don't overwrite completedSteps here because it's already recorded in executor.
+  // We update the last step's status if needed, or set context flags.
+  
+  const updatedHistory = [...state.completedSteps];
+  const lastIdx = updatedHistory.length - 1;
+  updatedHistory[lastIdx].status = parsed.success ? 'pass' : 'fail';
+  updatedHistory[lastIdx].reasoning = parsed.reasoning;
+
   if (parsed.success) {
-    await logger.info(`Validator: Intent fulfilled.`);
+    await logger.info(`Validator: Step verified. ${parsed.reasoning}`);
   } else {
-    await logger.info(`Validator: Intent NOT fulfilled. Reason: ${parsed.reasoning}`);
+    await logger.info(`Validator: Step failed semantic check. ${parsed.reasoning}`);
   }
 
-  const stepResult = {
-    action: state.currentStep,
-    result: lastResult,
-    status: parsed.success ? 'pass' : 'fail',
-    reasoning: parsed.reasoning
-  };
-
   return {
-    completedSteps: [stepResult], // Reducer will concat this
-    currentStep: null,
-    status: 'validating'
+    context: {
+      intentMet: parsed.intentMet,
+      lastValidatedStepIndex: lastIdx
+    },
+    status: parsed.intentMet ? 'finished' : 'validating'
   };
 };
