@@ -18,7 +18,7 @@
 - Q: What format should be used for default data extraction and storage? → A: JSON: Structured, native to JS, and natively supports nesting.
 - Q: Should the system support parallel execution of agents/sequences? → A: Sequential Only: One agent/sequence at a time to avoid browser/state contention.
 - Q: How should saved "robot sequences" (tools) be stored for portability? → A: Individual Files: Each sequence is a separate .json file in a dedicated folder.
-- Q: Which Robot Framework library should be the primary choice for web automation? → A: Browser Library: Modern, Playwright-powered, faster, and more robust.
+- Q: Which Robot Framework library should be the primary choice for web automation? → A: SeleniumLibrary: Mature, widely used, and supports various browser drivers.
 - Q: How should the system handle failures during the execution of a saved sequence (tool)? → A: Trigger Auto-Correction: Agent analyzes the failure and attempts to find a new way to achieve the tool's goal.
 - Q: Should the browser session persist between different independent user requests? → A: Persistent Session: Browser stays open or state is saved between independent user requests.
 - Q: How should Robot Framework HTML logs and reports be handled? → A: Persistent Logs: Save HTML reports in a dedicated logs/ folder and show the link in CLI.
@@ -26,7 +26,7 @@
 - Q: What is the target latency for the agent to generate and begin executing the first Robot action? → A: Relaxed: < 30 seconds (Acceptable for multi-step background tasks).
 - Q: How should the system handle unexpected browser-native alerts or permission pop-ups during execution? → A: Interactive Pause: Stop and wait for the user to manually handle the alert in the visible browser.
 - Q: Where should extracted data files be stored relative to the project root? → A: Dedicated Directory: Store in src/memory/data/ with timestamped filenames.
-- Q: Should the agent be limited to core keywords or can it utilize the full Browser Library? → A: Full Browser Library: Grant access to all Browser Library keywords.
+- Q: Should the agent be limited to core keywords or can it utilize the full SeleniumLibrary? → A: Full SeleniumLibrary: Grant access to all SeleniumLibrary keywords.
 - Q: How should the system handle encountering a Captcha or advanced bot protection? → A: Manual Bypass: Pause execution and alert the user to solve the Captcha in the visible browser.
 - Q: Which browser engine should the system use by default for automation? → A: Chromium (Google Chrome compatible).
 - Q: How should the system manage the lifecycle of the browser instance between tasks? → A: Auto-Cleanup: Close browser and clean temp data on agent exit.
@@ -130,14 +130,14 @@ As a user, I want to trigger a previously saved sequence by name so that I can r
 - **FR-017**: Extracted data MUST be stored in JSON format by default to ensure ease of parsing within the Node.js environment.
 - **FR-018**: System MUST execute agents and sequences sequentially to avoid browser resource contention and ensure state integrity.
 - **FR-019**: System MUST store each saved robot sequence as an individual JSON file using lowercase kebab-case naming (e.g., `my-tool-name.json`) within a dedicated directory (e.g., `src/memory/sequences/`) to ensure portability and ease of management.
-- **FR-020**: System MUST utilize the **Robot Framework Browser Library** (Playwright-based) with **Chromium** (Google Chrome compatible) as the primary default engine for all web-based automation tasks.
+- **FR-020**: System MUST utilize the **Robot Framework SeleniumLibrary** (WebDriver-based) with **Chromium** (Google Chrome compatible) as the primary default engine for all web-based automation tasks.
 - **FR-021**: If a saved sequence (tool) fails, the system MUST automatically trigger the auto-correction loop (FR-012) to attempt recovery and achieve the original intent.
 - **FR-022**: System MUST maintain browser session persistence (cookies, storage, etc.) across independent user requests to allow multi-request workflows.
 - **FR-023**: System MUST persist Robot Framework execution logs (HTML/XML) in a dedicated `logs/` directory and provide a reference link in the CLI output.
 - **FR-024**: System MUST automatically generate a concise, human-readable description for each saved sequence to aid in future discovery and reuse.
 - **FR-025**: System MUST pause execution and wait for manual user intervention when an unexpected browser-native alert or permission pop-up is encountered.
 - **FR-026**: System MUST store extracted data files in a dedicated directory (`src/memory/data/`) using timestamped filenames by default.
-- **FR-027**: The agent MUST have access to the full suite of keywords provided by the **Robot Framework Browser Library** to handle complex web interactions beyond the core set defined in FR-006.
+- **FR-027**: The agent MUST have access to the full suite of keywords provided by the **Robot Framework SeleniumLibrary** to handle complex web interactions beyond the core set defined in FR-006.
 - **FR-028**: System MUST pause and notify the user to perform manual intervention (e.g., solving a Captcha or bypassing bot protection) when such obstacles are detected in the visible browser.
 - **FR-029**: System MUST ensure that the browser instance and all associated temporary automation data are automatically closed and cleaned up when the agent process terminates.
 - **FR-030**: System MUST pass arguments to the Robot Framework via a temporary JSON variable file to ensure data integrity and prevent shell injection or syntax errors; saved tool sequences MUST persist these arguments in their static JSON definition.

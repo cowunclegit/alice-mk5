@@ -10,7 +10,7 @@ This feature implements an autonomous agent using the **Plan & Execute** pattern
 ## Technical Context
 
 **Language/Version**: Node.js (Latest LTS), JavaScript (ESM)
-**Primary Dependencies**: LangGraph.js, Robot Framework (Browser Library), LangChain, cheerio, js-yaml
+**Primary Dependencies**: LangGraph.js, Robot Framework (SeleniumLibrary), LangChain, cheerio, js-yaml
 **Storage**: Local File System (JSON for sequences/data, YAML for config)
 **Testing**: Jest (TDD strictly enforced)
 **Target Platform**: Node.js Runtime, Visible Browser (Chromium)

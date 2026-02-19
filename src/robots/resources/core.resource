@@ -1,21 +1,18 @@
 *** Settings ***
-Library    Browser    strict=False
+Library    SeleniumLibrary
 Library    OperatingSystem
 Library    Collections
 
 *** Keywords ***
 Open Visible Browser
-    [Arguments]    ${url}    ${browser}=chromium
-    # 봇 감지 우회를 위한 브라우저 인자 설정
-    ${args}=    Create List    --disable-blink-features=AutomationControlled    --no-sandbox
-    New Browser    browser=${browser}    headless=False    args=${args}
+    [Arguments]    ${url}    ${browser}=chrome
+    # 봇 감지 우회를 위한 브라우저 인자 설정 (Chrome 기준)
+    ${options}=    Evaluate    sys.modules['selenium.webdriver'].ChromeOptions()    sys, selenium.webdriver
+    Call Method    ${options}    add_argument    --disable-blink-features\=AutomationControlled
+    Call Method    ${options}    add_argument    --no-sandbox
+    Call Method    ${options}    add_argument    --user-agent\=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36
     
-    # 실제 브라우저처럼 보이도록 컨텍스트 설정
-    New Context    
-    ...    locale=ko-KR 
-    ...    userAgent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36
-    
-    New Page       ${url}
+    Open Browser    ${url}    ${browser}    options=${options}
 
 Navigate To URL
     [Arguments]    ${url}
@@ -23,24 +20,23 @@ Navigate To URL
 
 Wait For Element
     [Arguments]    ${selector}    ${timeout}=30s
-    Wait For Elements State    ${selector}    visible    timeout=${timeout}
+    Wait Until Element Is Visible    ${selector}    timeout=${timeout}
 
 Click Element
     [Arguments]    ${selector}
-    Click With Options    ${selector}    force=True
+    SeleniumLibrary.Click Element    ${selector}
 
 Type Into Element
     [Arguments]    ${selector}    ${text}
-    Fill Text    ${selector}    ${text}    force=True
+    Input Text    ${selector}    ${text}
 
 Press Enter
     [Arguments]    ${selector}
-    Focus    ${selector}
-    Keyboard Key    press    Enter
+    Press Keys    ${selector}    ENTER
 
 Capture DOM Source
     [Arguments]    ${filename}=dom.html
-    ${html}=    Get Property    body    innerHTML
+    ${html}=    Get Source
     Create File    ${OUTPUT DIR}${/}${filename}    ${html}
     RETURN    ${html}
 
@@ -54,12 +50,12 @@ Scrape List Data
     [Arguments]    ${selector}    ${filename}=result.json
     [Documentation]    Extracts text and href from all elements and saves as JSON.
     Wait For Element    ${selector}
-    ${elements}=    Get Elements    ${selector}
+    ${elements}=    Get WebElements    ${selector}
     ${results}=     Create List
     
     FOR    ${el}    IN    @{elements}
         ${text}=    Get Text    ${el}
-        ${link}=    Evaluate JavaScript    ${el}    (el) => el.href || ""
+        ${link}=    Execute JavaScript    return arguments[0].href || ""    ARGUMENTS    ${el}
         
         ${item}=    Create Dictionary    text=${text}    link=${link}
         Append To List    ${results}    ${item}
@@ -72,6 +68,6 @@ Scrape List Data
 
 Extract All Links
     [Arguments]    ${selector}    ${filename}=links.txt
-    ${links}=    Get Attribute    ${selector}    href
+    ${links}=    Get Element Attribute    ${selector}    href
     Create File    ${OUTPUT DIR}${/}${filename}    ${links}
     RETURN    ${links}

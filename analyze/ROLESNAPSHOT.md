@@ -1,6 +1,6 @@
 # OpenClaw Role Snapshot & Reference System Analysis
 
-OpenClaw의 웹 브라우징 혁신의 핵심은 방대한 HTML 데이터를 AI가 즉각적으로 이해하고 조작할 수 있는 **"참조 가능 지능형 지도(Role Snapshot)"**로 변환하는 기술에 있습니다. 이 문서는 `src/browser/pw-role-snapshot.ts`를 중심으로 해당 시스템의 작동 원리를 상세히 분석합니다.
+OpenClaw의 웹 브라우징 혁신의 핵심은 방대한 HTML 데이터를 AI가 즉각적으로 이해하고 조작할 수 있는 **"참조 가능 지능형 지도(Role Snapshot)"**로 변환하는 기술에 있습니다. 이 문서는 에이전트가 사용하는 스냅샷 시스템의 작동 원리를 상세히 분석합니다.
 
 ---
 
@@ -50,8 +50,8 @@ OpenClaw는 웹 요소를 그 성격에 따라 세 가지 카테고리로 분류
 ```
 
 ### 상태 지속성 (Persistence):
-*   이 매핑 정보는 `storeRoleRefsForTarget`를 통해 해당 페이지 세션(`targetId`)에 저장됩니다.
-*   에이전트가 다음 턴에 `ref: "e1"`에 대해 `click` 요청을 보내면, 서버는 저장된 매핑 정보를 바탕으로 실제 Playwright 로케이터를 생성하여 동작을 수행합니다.
+*   이 매핑 정보는 에이전트의 상태(State) 내에 저장됩니다.
+*   에이전트가 다음 턴에 `ref: "e1"`에 대해 `click` 요청을 보내면, 분석기(Analyzer)는 저장된 매핑 정보를 바탕으로 실제 CSS 셀렉터를 찾아 SeleniumLibrary 키워드를 통해 동작을 수행합니다.
 
 ---
 

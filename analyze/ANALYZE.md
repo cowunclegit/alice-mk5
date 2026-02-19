@@ -9,8 +9,8 @@
 OpenClaw의 웹 브라우징 시스템은 크게 세 가지 계층으로 구성됩니다.
 
 *   **Agent Tool Layer (`src/agents/tools/`)**: 에이전트(LLM)가 직접 호출하는 인터페이스입니다. `browser-tool.ts`, `web-search.ts`, `web-fetch.ts` 등이 포함됩니다.
-*   **Browser Control Layer (`src/browser/`)**: 브라우저 인스턴스를 관리하고 제어 명령을 수신하는 Express 기반 서버(`server.ts`)와 Playwright 세션 관리 로직이 위치합니다.
-*   **AI Perception Layer (`src/browser/pw-role-snapshot.ts`)**: 브라우저의 DOM/접근성 트리를 AI가 이해하기 쉬운 텍스트 구조로 변환하는 핵심 엔진입니다.
+*   **Browser Control Layer**: Robot Framework SeleniumLibrary를 통해 브라우저 인스턴스를 관리하고 제어 명령을 수행합니다.
+*   **AI Perception Layer**: 브라우저의 DOM 소스를 분석하여 에이전트가 이해하기 쉬운 구조로 변환하는 계층입니다.
 
 ---
 
@@ -31,17 +31,12 @@ OpenClaw의 웹 브라우징 시스템은 크게 세 가지 계층으로 구성�
 *   **Profile Matching**: `openclaw`(격리된 자동화 전용) 또는 `chrome`(사용자 크롬 확장 프로그램 연동) 프로필에 따라 브라우저 세션을 연결합니다.
 *   **Authentication**: 설정된 토큰이나 패스워드를 통해 보안 인증을 수행합니다.
 
-### Step 4: Playwright 기반 브라우저 조작 (Deep Dive)
+### Step 4: SeleniumLibrary 기반 브라우저 조작 (Deep Dive)
 실제 브라우저 엔진(Chromium)을 제어하는 핵심 계층입니다.
 
-*   **세션 및 타겟 관리 (`pw-session.ts`)**:
-    *   `getPageForTargetId`: 에이전트가 특정 탭(`targetId`)을 지속적으로 제어할 수 있도록 세션을 추적합니다.
-    *   Playwright의 `Page` 객체에 고유 식별자를 부여하여 멀티 탭 환경에서도 정확한 타겟팅이 가능합니다.
-*   **CDP(Chrome DevTools Protocol) 활용**:
-    *   일반적인 Playwright API 외에도 `CDPSession`을 직접 열어 브라우저의 로우 레벨 데이터에 접근합니다.
-    *   `Accessibility.getFullAXTree`를 호출하여 시각적 렌더링 너머의 **의미론적 구조(Semantic Structure)**를 추출합니다.
-*   **동작 실행 (`pw-tools-core.ts`)**:
-    *   `clickViaPlaywright`, `typeViaPlaywright`: AI가 전달한 참조 번호(ref)를 기반으로 실제 DOM 요소를 찾아 이벤트를 시뮬레이션합니다.
+*   **동작 실행 (`core.resource`)**:
+    *   `Open Visible Browser`, `Click Element`, `Type Into Element`: SeleniumLibrary를 사용하여 브라우저를 제어합니다.
+    *   사용자가 모든 과정을 지켜볼 수 있도록 `headless=false` 옵션을 기본으로 사용합니다.
 
 ### Step 5: AI를 위한 페이지 구조 분석 (Role Snapshot)
 AI가 페이지의 상태를 텍스트로 "이해"할 수 있도록 변환하는 단계입니다.

@@ -108,9 +108,9 @@ AXTree 정보를 얻는 방법은 여러 가지가 있지만, OpenClaw가 CDP를
 | :--- | :--- | :--- | :--- |
 | **CDP (OpenClaw)** | `Accessibility.getFullAXTree` | 브라우저 엔진이 계산한 가장 정확한 트리 추출 | AI를 위한 **공격적인 필터링 및 Markdown 변환** 로직 포함 |
 | **Playwright 내장 API** | `accessibility.snapshot()` | 간편한 사용법, 내부적으로 CDP 활용 | 데이터 형식이 고정되어 있어 커스텀 필터링에 제한적임 |
-| **Robot Framework** | `Get Accessibility Tree` | Browser Library 키워드로 JSON 트리 반환 | 방대한 **Raw JSON**을 그대로 반환하므로 LLM에 직접 넣기 부적합 |
+| **Robot Framework** | `Get Source` + Custom JS | SeleniumLibrary는 내장 AXTree 키워드가 없으므로 JS 주입 필요 | 가용성이 낮으나 레거시 환경 호환성이 좋음 |
 | **수동 DOM 분석** | `JS / document.query` | 태그와 속성을 직접 순회하여 트리 구축 | Computed Name 계산이 부정확하며 숨겨진 요소 처리가 어려움 |
 | **Native OS API** | `UI Automation` (Win) | OS 레벨에서 앱의 트리 구조 파악 | 웹 브라우저 내부의 상세 맥락 파악 및 상호작용이 복잡함 |
 
-### Robot Framework Browser Library 상세 비교
-Robot Framework의 Browser Library는 내부적으로 Playwright를 사용하므로 `Get Accessibility Tree` 키워드를 통해 AXTree를 JSON 형태로 가져올 수 있습니다. 하지만 이 데이터는 수천 줄의 JSON 덩어리이므로, OpenClaw처럼 **"참조 번호(Ref) 부여"** 및 **"가독성 높은 마크다운 변환"** 과정 없이는 에이전트가 효율적으로 사용하기 어렵습니다.
+### Robot Framework SeleniumLibrary 상세 비교
+Robot Framework의 SeleniumLibrary는 Browser Library와 달리 내장된 `Get Accessibility Tree` 키워드를 제공하지 않습니다. 따라서 AXTree 기반의 분석이 필요할 경우, CDP 명령을 직접 실행하거나 별도의 JavaScript 라이브러리를 브라우저에 주입하여 트리를 구성해야 합니다. 이는 구현 복잡도를 높이지만, 다양한 WebDriver 기반 환경에서 동작할 수 있는 장점이 있습니다.

@@ -1,0 +1,12 @@
+{
+  "id": "test-tool",
+  "actions": [
+    {
+      "keyword": "No Operation",
+      "args": []
+    }
+  ],
+  "metadata": {
+    "prompt": "Do nothing"
+  }
+}
