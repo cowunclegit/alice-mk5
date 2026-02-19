@@ -6,21 +6,23 @@ export const analyzer = async (state, config) => {
   const model = config.configurable.model;
 
   if (!state.currentXML || state.currentXML.trim() === '') {
-    await logger.info('AppAnalyzer: XML is empty. Skipping.');
-    return { status: 'analyzing' };
+    await logger.error('AppAnalyzer: XML is empty. Cannot find selector.');
+    return { 
+      status: 'error', 
+      reasoning: 'UI XML structure could not be captured. App might be closed or unresponsive.' 
+    };
   }
 
   await logger.info(`AppAnalyzer: Finding selector for intent: "${state.currentStep.intent}"`);
 
-  // Parse XML using cheerio (works for XML too)
+  // Parse XML using cheerio
   const $ = cheerio.load(state.currentXML, { xmlMode: true });
   
-  // Extract candidates - looking for clickable or focusable elements
   const candidates = [];
   $('*').each((i, el) => {
     const node = $(el);
-    const accessibilityId = node.attr('accessibility-id') || node.attr('AccessibilityId') || node.attr('content-desc');
-    const text = node.attr('text') || node.attr('label') || node.attr('name');
+    const accessibilityId = node.attr('accessibility-id') || node.attr('AccessibilityId') || node.attr('identifier');
+    const text = node.attr('text') || node.attr('label') || node.attr('name') || node.attr('title');
     const className = node.attr('class') || el.name;
     const resourceId = node.attr('resource-id') || node.attr('id');
 
@@ -40,7 +42,11 @@ Given a list of UI elements (from XML source) and a user intent, find the best t
 Appium prefers AccessibilityId, then Name/Text, then XPath.
 
 ### RULES:
-- Prefer "accessibility id:VALUE" or "name:VALUE" or "id:VALUE".
+- Use the format: "attribute=value".
+- STRATEGIES:
+  1. If 'accessibilityId' is present, use: "accessibility_id=VALUE"
+  2. If 'text' or 'name' is present, use: "name=VALUE"
+  3. If 'resourceId' is present, use: "id=VALUE"
 - Return ONLY a valid Appium selector string.
 - Respond ONLY with a JSON object:
 {

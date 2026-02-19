@@ -56,10 +56,16 @@ export class RegistryService {
 
     const platform = os.platform();
     return {
-      platformName: platform === 'darwin' ? 'macOS' : 'Windows',
+      platformName: platform === 'darwin' ? 'Mac' : 'Windows',
+      // For macOS, bundleId is much more reliable than path
       app: platform === 'darwin' ? (match.identifier || match.path) : match.path,
       automationName: platform === 'darwin' ? 'Mac2' : 'Windows',
-      deviceName: os.hostname()
+      deviceName: 'Mac',
+      'appium:bundleId': platform === 'darwin' ? match.identifier : undefined,
+      'appium:showServerLogs': true,
+      'appium:serverConnectTimeout': 90000,
+      'appium:noReset': true,
+      'appium:forceAppLaunch': true
     };
   }
 }

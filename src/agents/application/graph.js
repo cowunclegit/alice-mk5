@@ -21,7 +21,11 @@ export const appSubGraph = (nodes) => {
   workflow.addEdge("planner", "capture_xml");
   workflow.addEdge("capture_xml", "analyzer");
   workflow.addEdge("analyzer", "executor");
-  workflow.addEdge("executor", "validator");
+  
+  workflow.addConditionalEdges("executor", (state) => {
+    if (state.status === 'error') return END;
+    return "validator";
+  });
 
   workflow.addConditionalEdges("validator", (state) => {
     if (state.status === 'fail' && state.retryCount < 5) return "reviser";

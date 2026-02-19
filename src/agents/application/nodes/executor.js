@@ -9,19 +9,52 @@ export const executor = async (state, config) => {
   }
 
   const { keyword, args, selector } = state.currentStep;
+  
+  // If keyword requires an element but selector is missing
+  if (['Click Application Element', 'Type Into Application Element'].includes(keyword) && !selector) {
+    await logger.error(`AppExecutor: Selector missing for keyword "${keyword}". Aborting.`);
+    return {
+      status: 'error',
+      reasoning: `No selector found for action: ${state.currentStep.intent}`
+    };
+  }
+
   const finalArgs = selector ? [selector, ...args] : args;
+
+  // Check if Appium server is running
+  const isAppiumRunning = await AppiumService.isServerRunning();
+  if (!isAppiumRunning) {
+    const serverUrl = await AppiumService.getServerUrl();
+    await logger.error(`AppExecutor: Appium server not found at ${serverUrl}. Please start it with 'appium' command.`);
+    return {
+      status: 'error',
+      reasoning: `Appium server not running at ${serverUrl}`
+    };
+  }
 
   await logger.info(`AppExecutor: Running step "${keyword}" with args: ${JSON.stringify(finalArgs)}`);
 
-  // Ensure Appium variables are passed to the Robot script
-  // We need to modify RobotBridge or use a similar approach
+  const appiumUrl = await AppiumService.getServerUrl();
+  const caps = state.appCapabilities;
+  const actions = [];
   
-  const result = await RobotBridge.runKeyword(keyword, finalArgs, state.sessionId, state.selectedResources);
+  if (keyword !== 'Open Application Session') {
+    actions.push({
+      keyword: 'Open Application Session',
+      args: [appiumUrl, caps.platformName, caps.app, caps.automationName, caps.deviceName]
+    });
+  }
+  
+  actions.push({ keyword, args: finalArgs });
+
+  const result = await RobotBridge.runSequence(actions, state.completedSteps.length + 1, state.sessionId, state.selectedResources);
 
   if (result.status === 'pass') {
     await logger.info(`AppExecutor: Success.`);
   } else {
     await logger.error(`AppExecutor: Failed.`);
+    await logger.debug(`Robot Stdout: ${result.stdout}`);
+    await logger.debug(`Robot Stderr: ${result.stderr}`);
   }
 
   return {
