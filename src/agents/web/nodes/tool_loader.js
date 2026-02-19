@@ -6,7 +6,7 @@ export const toolLoader = async (state, config) => {
   const logger = config.configurable.logger;
   const input = state.input.toLowerCase();
   const toolId = input.replace('run tool ', '').replace('use tool ', '').trim();
-  const manifestPath = path.join(process.cwd(), 'src/robots/resources/web/manifest.json');
+  const manifestPath = path.join(process.cwd(), 'src/robots/resources/manifest.json');
   
   await logger.info(`Router: Routing to Tool Execution for "${toolId}"`);
   
@@ -20,10 +20,12 @@ export const toolLoader = async (state, config) => {
       const manifest = JSON.parse(manifestContent);
       const toolText = JSON.stringify(sequence).toLowerCase();
 
-      for (const [filename, aliases] of Object.entries(manifest)) {
+      for (const [resPath, aliases] of Object.entries(manifest)) {
+        if (!resPath.startsWith('web/')) continue;
+
         const hasMatch = aliases.some(alias => toolText.includes(alias.toLowerCase()));
         if (hasMatch) {
-          selected.push(`web/${filename}`);
+          selected.push(resPath);
         }
       }
     } catch (e) {
