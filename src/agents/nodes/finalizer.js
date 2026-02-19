@@ -66,6 +66,15 @@ export const finalizer = async (state, config) => {
     }
   }
 
+  // Close browser at the end of agent session
+  try {
+    const { BrowserService } = await import('../../services/browser_service.js');
+    await BrowserService.stopBrowser(state.sessionId);
+    await logger.info('Finalizer: Browser process stopped.');
+  } catch (e) {
+    // ignore
+  }
+
   rl.close();
   return { 
     status: 'finished',

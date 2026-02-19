@@ -4,9 +4,16 @@ export const validator = async (state, config) => {
   const logger = config.configurable.logger;
   const model = config.configurable.model;
   const lastResult = state.context.lastResult;
-  const completed = state.completedSteps || [];
 
   await logger.debug(`Validator: Evaluating last step outcome.`);
+
+  // Robust check for currentStep
+  if (!state.currentStep || typeof state.currentStep !== 'object') {
+    await logger.debug('Validator: No currentStep to validate. Finishing.');
+    return { status: 'finished' };
+  }
+
+  const intent = state.currentStep.intent || 'Unknown Intent';
 
   const systemPrompt = `You are a web automation validator.
 Given the original user intent, the action performed, and the execution result, determine if the goal was met.
@@ -23,17 +30,22 @@ Respond ONLY with a JSON object in the format:
 }
 `;
 
-  const userPrompt = `Intent: ${state.input}
-Action Intent: ${state.currentStep.intent}
+  const userPrompt = `Original Intent: ${state.input}
+Step Intent: ${intent}
 Execution Result: ${JSON.stringify(lastResult)}
 `;
 
-  const response = await model.invoke([
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: userPrompt }
-  ]);
-
-  const parsed = extractAndParseJSON(response.content);
+  let parsed = { success: false, reasoning: "Validation failed to run or parse." };
+  try {
+    const response = await model.invoke([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ]);
+    parsed = extractAndParseJSON(response.content);
+  } catch (e) {
+    await logger.error(`Validator: LLM call failed: ${e.message}`);
+    parsed.reasoning = `LLM Error: ${e.message}`;
+  }
   
   if (parsed.success) {
     await logger.info(`Validator: Intent fulfilled.`);
@@ -49,7 +61,7 @@ Execution Result: ${JSON.stringify(lastResult)}
   };
 
   return {
-    completedSteps: [stepResult], // Reducer will concat this
+    completedSteps: [stepResult],
     currentStep: null,
     status: 'validating'
   };

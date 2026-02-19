@@ -6,13 +6,48 @@ Library    Collections
 *** Keywords ***
 Open Visible Browser
     [Arguments]    ${url}    ${browser}=chrome
-    # 봇 감지 우회를 위한 브라우저 인자 설정 (Chrome 기준)
+    # 1. Try attaching to existing browser if port is open
+    ${status}    ${val}=    Run Keyword And Ignore Error    Connect To Existing Browser    ${browser}
+    
+    IF    '${status}' == 'PASS'
+        Go To    ${url}
+        RETURN
+    END
+
+    # 2. Start new browser if attachment failed
     ${options}=    Evaluate    sys.modules['selenium.webdriver'].ChromeOptions()    sys, selenium.webdriver
     Call Method    ${options}    add_argument    --disable-blink-features\=AutomationControlled
     Call Method    ${options}    add_argument    --no-sandbox
     Call Method    ${options}    add_argument    --user-agent\=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36
+    Call Method    ${options}    add_argument    --remote-allow-origins\=*
+    
+    # 핵심: 브라우저가 종료되지 않도록 설정
+    Call Method    ${options}    add_experimental_option    detach    ${True}
+    Call Method    ${options}    add_argument    --remote-debugging-port\=${DEBUG_PORT}
+    
+    # Absolute path for profile
+    ${root}=    Evaluate    os.path.abspath(os.path.join(r'${CURDIR}', '..', '..', '..'))    os
+    ${user_data}=    Set Variable    ${root}${/}browser${/}profiles${/}${SESSION_ID}
+    Call Method    ${options}    add_argument    --user-data-dir\=${user_data}
     
     Open Browser    ${url}    ${browser}    options=${options}
+    Set Window Size    1280    1024
+
+Connect To Existing Browser
+    [Arguments]    ${browser}=chrome
+    # Fast check if port is open (0 means success)
+    ${res}=    Evaluate    __import__('socket').socket(__import__('socket').AF_INET, __import__('socket').SOCK_STREAM).connect_ex(('127.0.0.1', ${DEBUG_PORT}))
+    
+    IF    ${res} != 0
+        Fail    Port ${DEBUG_PORT} is not responding (code: ${res}).
+    END
+
+    # Port is open, try attaching
+    ${options}=    Evaluate    sys.modules['selenium.webdriver'].ChromeOptions()    sys, selenium.webdriver
+    Call Method    ${options}    add_experimental_option    debuggerAddress    127.0.0.1:${DEBUG_PORT}
+    
+    # Use actual Python None for URL to attach without navigation
+    Open Browser    url=${None}    browser=${browser}    options=${options}
 
 Navigate To URL
     [Arguments]    ${url}
@@ -71,3 +106,6 @@ Extract All Links
     ${links}=    Get Element Attribute    ${selector}    href
     Create File    ${OUTPUT DIR}${/}${filename}    ${links}
     RETURN    ${links}
+
+Close Session Browser
+    Close All Browsers

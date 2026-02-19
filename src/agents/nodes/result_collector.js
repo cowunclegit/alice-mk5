@@ -30,6 +30,15 @@ export const resultCollector = async (state, config) => {
     }
   }
 
+  // Close browser at the end of tool execution
+  try {
+    const { BrowserService } = await import('../../services/browser_service.js');
+    await BrowserService.stopBrowser(state.sessionId);
+    await logger.info('ResultCollector: Browser process stopped.');
+  } catch (e) {
+    await logger.error(`브라우저 종료 중 오류: ${e.message}`);
+  }
+
   return { 
     status: 'finished',
     extractedFiles: newlyFinalizedFiles // Update state with file paths

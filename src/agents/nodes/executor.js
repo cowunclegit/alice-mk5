@@ -13,16 +13,16 @@ export const executor = async (state, config) => {
 
   const { keyword, args } = state.currentStep;
   
-  await logger.info(`Executor: Running current session sequence up to "${keyword}".`);
+  await logger.info(`Executor: Running step "${keyword}".`);
   
-  // Construct sequence: All steps in current plan up to current step
-  const sessionActions = state.plan.slice(0, state.plan.indexOf(state.currentStep) + 1).map(step => ({
-    keyword: step.keyword,
-    args: step.args || []
-  }));
+  // Only run the CURRENT step
+  const action = {
+    keyword: state.currentStep.keyword,
+    args: state.currentStep.args || []
+  };
 
   const stepNumber = state.completedSteps.length + 1;
-  const result = await RobotBridge.runSequence(sessionActions, stepNumber, state.sessionId, state.selectedResources);
+  const result = await RobotBridge.runKeyword(action.keyword, action.args, state.sessionId, state.selectedResources);
   
   if (result.status === 'pass') {
     await logger.info(`Executor: Success.`);
