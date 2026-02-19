@@ -23,4 +23,5 @@ Thumbs.db
 .vscode/
 .idea/
 tmp_robot/
+sample_app/
 config.yaml

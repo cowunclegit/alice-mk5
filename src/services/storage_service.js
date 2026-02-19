@@ -13,18 +13,31 @@ export class StorageService {
         : path.join(process.cwd(), config.resultsDir);
     }
     await fs.mkdir(this.resultsDir, { recursive: true });
-    await fs.mkdir(this.toolsDir, { recursive: true });
+    await fs.mkdir(path.join(this.toolsDir, 'web'), { recursive: true });
+    await fs.mkdir(path.join(this.toolsDir, 'application'), { recursive: true });
   }
 
-  static async saveSequence(sequence) {
-    const filePath = path.join(this.toolsDir, `${sequence.id}.json`);
-    await fs.writeFile(filePath, JSON.stringify(sequence, null, 2));
+  static async saveSequence(sequence, platform = 'web') {
+    const dir = path.join(this.toolsDir, platform);
+    await fs.mkdir(dir, { recursive: true });
+    const filePath = path.join(dir, `${sequence.id}.json`);
+    await fs.writeFile(filePath, JSON.stringify({ ...sequence, platform }, null, 2));
   }
 
-  static async loadSequence(id) {
-    const filePath = path.join(this.toolsDir, `${id}.json`);
+  static async loadSequence(id, platform = 'web') {
+    const filePath = path.join(this.toolsDir, platform, `${id}.json`);
     const content = await fs.readFile(filePath, 'utf8');
     return JSON.parse(content);
+  }
+
+  static async listTools(platform = 'web') {
+    const dir = path.join(this.toolsDir, platform);
+    try {
+      const files = await fs.readdir(dir);
+      return files.filter(f => f.endsWith('.json')).map(f => f.replace('.json', ''));
+    } catch (e) {
+      return [];
+    }
   }
 
   /**

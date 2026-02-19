@@ -16,7 +16,7 @@ Click Naver News Tab
     Click Element       ${selector}
 
 Extract Naver News Results
-    [Arguments]    ${filename}=result.txt
+    [Arguments]    ${filename}=result.json
     [Documentation]    Extracts ALL titles and links using the generic Scrape List Data keyword.
     ${selector}=    Set Variable    css:a.news_tit, a[data-heatmap-target=".tit"]
     # 공용 키워드 호출

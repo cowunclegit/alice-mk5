@@ -8,29 +8,43 @@ export class RobotBridge {
     const sessionDir = path.join(process.cwd(), 'tmp_robot', `session-${sessionId}`);
     await fs.mkdir(sessionDir, { recursive: true });
 
-    // Node.js launches the browser once and keeps it alive
-    const debugPort = await BrowserService.startBrowser(sessionId);
+    const isAppTask = selectedResources.some(r => r.includes('application'));
+    let debugPort = 0;
+
+    if (!isAppTask) {
+      debugPort = await BrowserService.startBrowser(sessionId);
+    }
     
     const robotFile = path.join(sessionDir, `step-${stepNumber}.robot`);
     const varsFile = path.join(sessionDir, `vars-${stepNumber}.py`);
     
-    const resourceDir = path.join(process.cwd(), 'src/robots/resources');
+    const baseResourceDir = path.join(process.cwd(), 'src/robots/resources');
     const resourceSettings = selectedResources
-      .map(r => `Resource    ${path.join(resourceDir, r)}`)
+      .map(r => {
+        // Ensure absolute path to resource file to avoid namespace/relative issues
+        const fullPath = path.isAbsolute(r) ? r : path.join(baseResourceDir, r);
+        return `Resource    ${fullPath}`;
+      })
       .join('\n');
     
     let testSteps = '';
     
-    // Every Robot step ALWAYS starts by connecting to the persistent browser
-    testSteps += `    Connect To Existing Browser\n`;
+    if (!isAppTask) {
+      testSteps += `    Connect To Existing Browser\n`;
+    }
 
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i];
-      const { keyword, args = [] } = action;
+      let { keyword, args = [] } = action;
       
-      // If the LLM generates Open Visible Browser, we replace it with navigation 
-      // because the browser is ALREADY open and attached.
-      if (keyword === 'Open Visible Browser') {
+      // Remove any folder prefix from keyword to prevent "No keyword found" errors
+      // e.g., "web/naver.resource.Search Naver" -> "Search Naver"
+      if (keyword.includes('.')) {
+        const parts = keyword.split('.');
+        keyword = parts[parts.length - 1];
+      }
+
+      if (!isAppTask && keyword === 'Open Visible Browser') {
         const url = args[0] || 'about:blank';
         testSteps += `    Navigate To URL    ${url}\n`;
         continue;
