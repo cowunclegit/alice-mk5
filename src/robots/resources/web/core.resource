@@ -72,18 +72,20 @@ Press Enter
 Capture DOM Source
     [Arguments]    ${filename}=dom.html
     ${html}=    Get Source
-    Create File    ${OUTPUT DIR}${/}${filename}    ${html}
-    RETURN    ${html}
+    ${path}=    Set Variable    ${OUTPUT DIR}${/}${filename}
+    Create File    ${path}    ${html}
+    RETURN    ${path}
 
 Extract Element Data
     [Arguments]    ${selector}    ${filename}=result.txt
     ${texts}=    Get Text    ${selector}
-    Create File    ${OUTPUT DIR}${/}${filename}    ${texts}
-    RETURN    ${texts}
+    ${path}=    Set Variable    ${OUTPUT DIR}${/}${filename}
+    Create File    ${path}    ${texts}
+    RETURN    ${path}
 
-Scrape List Data
+Save List Data
     [Arguments]    ${selector}    ${filename}=result.json
-    [Documentation]    Extracts text and href from all elements and saves as JSON.
+    [Documentation]    Extracts text and href from all elements and saves as JSON. Returns the absolute file path.
     Wait For Element    ${selector}
     ${elements}=    Get WebElements    ${selector}
     ${results}=     Create List
@@ -97,15 +99,19 @@ Scrape List Data
     END
     
     ${json_string}=    Evaluate    json.dumps($results, ensure_ascii=False, indent=2)    json
+    ${path}=    Set Variable    ${OUTPUT DIR}${/}${filename}
     
-    Create File    ${OUTPUT DIR}${/}${filename}    ${json_string}
-    RETURN    ${json_string}
+    Create File    ${path}    ${json_string}
+    # Return path so it appears in log
+    Log    SAVED_FILE_PATH: ${path}
+    RETURN    ${path}
 
 Extract All Links
     [Arguments]    ${selector}    ${filename}=links.txt
     ${links}=    Get Element Attribute    ${selector}    href
-    Create File    ${OUTPUT DIR}${/}${filename}    ${links}
-    RETURN    ${links}
+    ${path}=    Set Variable    ${OUTPUT DIR}${/}${filename}
+    Create File    ${path}    ${links}
+    RETURN    ${path}
 
 Close Session Browser
     Close All Browsers

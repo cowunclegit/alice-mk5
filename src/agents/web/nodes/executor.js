@@ -22,7 +22,7 @@ export const executor = async (state, config) => {
   };
 
   const stepNumber = state.completedSteps.length + 1;
-  const result = await RobotBridge.runKeyword(action.keyword, action.args, state.sessionId, state.selectedResources);
+  const result = await RobotBridge.runKeyword(action.keyword, action.args, state.sessionId, state.selectedResources, logger);
   
   if (result.status === 'pass') {
     await logger.info(`Executor: Success.`);

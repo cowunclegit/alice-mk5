@@ -16,13 +16,13 @@ const shouldContinue = (state) => {
   const lastStep = state.completedSteps[state.completedSteps.length - 1];
   if (lastStep && lastStep.status === 'fail') {
     if (state.retryCount < 5) return "reviser";
-    return "finalizer";
+    return state.isSubAgent ? "result_collector" : "finalizer";
   }
 
   if (state.remainingSteps && state.remainingSteps.length > 0) {
     return "initialize_step";
   }
-  return "finalizer";
+  return state.isSubAgent ? "result_collector" : "finalizer";
 };
 
 const initializeStep = (state) => {
@@ -47,9 +47,9 @@ const workflow = new StateGraph(AgentState)
   .addNode("capture_dom", captureDom)
   .addNode("executor", executor)
   .addNode("simple_executor", simpleExecutor)
-  .addNode("result_collector", resultCollector) // New non-interactive finalizer
+  .addNode("result_collector", resultCollector)
   .addNode("validator", validator)
-  .addNode("finalizer", finalizer) // Existing interactive finalizer
+  .addNode("finalizer", finalizer)
   .addNode("reviser", reviser)
   
   // Routing

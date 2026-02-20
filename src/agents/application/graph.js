@@ -30,7 +30,7 @@ export const appSubGraph = (nodes) => {
   workflow.addConditionalEdges("validator", (state) => {
     if (state.status === 'fail' && state.retryCount < 5) return "reviser";
     if (state.remainingSteps?.length > 0) return "capture_xml";
-    return "finalizer";
+    return state.isSubAgent ? END : "finalizer";
   });
 
   workflow.addEdge("reviser", "capture_xml");

@@ -20,5 +20,5 @@ Extract Naver News Results
     [Documentation]    Extracts ALL titles and links using the generic Scrape List Data keyword.
     ${selector}=    Set Variable    css:a.news_tit, a[data-heatmap-target=".tit"]
     # 공용 키워드 호출
-    ${data}=    Scrape List Data    ${selector}    ${filename}
+    ${data}=    Save List Data    ${selector}    ${filename}
     RETURN    ${data}

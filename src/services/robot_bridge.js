@@ -4,7 +4,7 @@ import path from 'path';
 import { BrowserService } from './browser_service.js';
 
 export class RobotBridge {
-  static async runSequence(actions, stepNumber = 1, sessionId = 'unknown', selectedResources = ['core.resource']) {
+  static async runSequence(actions, stepNumber = 1, sessionId = 'unknown', selectedResources = ['core.resource'], logger = null) {
     const sessionDir = path.join(process.cwd(), 'tmp_robot', `session-${sessionId}`);
     await fs.mkdir(sessionDir, { recursive: true });
 
@@ -21,7 +21,6 @@ export class RobotBridge {
     const baseResourceDir = path.join(process.cwd(), 'src/robots/resources');
     const resourceSettings = selectedResources
       .map(r => {
-        // Ensure absolute path to resource file to avoid namespace/relative issues
         const fullPath = path.isAbsolute(r) ? r : path.join(baseResourceDir, r);
         return `Resource    ${fullPath}`;
       })
@@ -37,8 +36,6 @@ export class RobotBridge {
       const action = actions[i];
       let { keyword, args = [] } = action;
       
-      // Remove any folder prefix from keyword to prevent "No keyword found" errors
-      // e.g., "web/naver.resource.Search Naver" -> "Search Naver"
       if (keyword.includes('.')) {
         const parts = keyword.split('.');
         keyword = parts[parts.length - 1];
@@ -91,21 +88,42 @@ DEBUG_PORT = ${debugPort}
       let stdout = '';
       let stderr = '';
 
-      robotProcess.stdout.on('data', (data) => { stdout += data.toString(); });
-      robotProcess.stderr.on('data', (data) => { stderr += data.toString(); });
+      robotProcess.stdout.on('data', (data) => { 
+        const line = data.toString();
+        stdout += line;
+        if (logger) {
+          logger.debug(`[Robot] ${line.trim()}`);
+        }
+      });
+      
+      robotProcess.stderr.on('data', (data) => { 
+        const line = data.toString();
+        stderr += line;
+        if (logger) {
+          logger.error(`[Robot Error] ${line.trim()}`);
+        }
+      });
 
       robotProcess.on('close', (code) => {
+        // Extract saved file path from stdout if present
+        let savedPath = null;
+        const pathMatch = stdout.match(/SAVED_FILE_PATH: (.*)/);
+        if (pathMatch && pathMatch[1]) {
+          savedPath = pathMatch[1].trim();
+        }
+
         resolve({
           status: code === 0 ? 'pass' : 'fail',
           stdout,
           stderr,
-          tempDir: outputDir
+          tempDir: outputDir,
+          savedFilePath: savedPath
         });
       });
     });
   }
 
-  static async runKeyword(keyword, args = [], sessionId = 'unknown', selectedResources = ['core.resource']) {
-    return this.runSequence([{ keyword, args }], 1, sessionId, selectedResources);
+  static async runKeyword(keyword, args = [], sessionId = 'unknown', selectedResources = ['core.resource'], logger = null) {
+    return this.runSequence([{ keyword, args }], 1, sessionId, selectedResources, logger);
   }
 }

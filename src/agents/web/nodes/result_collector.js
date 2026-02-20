@@ -6,42 +6,80 @@ export const resultCollector = async (state, config) => {
   const logger = config.configurable.logger;
   const toolId = state.activeToolId || 'direct';
   const newlyFinalizedFiles = [];
+  const newDataStoreUpdates = {};
 
-  await logger.info(`ResultCollector: Collecting results for tool "${toolId}"...`);
+  await logger.info(`ResultCollector: Standardizing results into unified dataStore...`);
 
   for (const step of state.completedSteps) {
-    if (step.status === 'pass' && step.result && step.result.tempDir) {
-      try {
-        const files = await fs.readdir(step.result.tempDir);
-        for (const file of files) {
-          const ext = path.extname(file).toLowerCase();
-          if (['.json', '.txt', '.csv', '.html'].includes(ext) && !['output.xml', 'browser_state.json', 'log.html', 'report.html', 'dom.html'].includes(file)) {
-            const finalPath = await StorageService.finalizeResult(
-              path.join(step.result.tempDir, file),
-              file,
-              toolId
-            );
-            newlyFinalizedFiles.push(finalPath);
-            await logger.info(`결과 파일이 저장되었습니다: ${finalPath}`);
+    if (step.status === 'pass' && step.result) {
+      const resultFiles = [];
+      
+      // 1. Collect from explicit path
+      if (step.result.savedFilePath) {
+        resultFiles.push({
+          tempPath: step.result.savedFilePath,
+          name: path.basename(step.result.savedFilePath)
+        });
+      }
+
+      // 2. Collect from tempDir (fallback/additional files)
+      if (step.result.tempDir) {
+        try {
+          const files = await fs.readdir(step.result.tempDir);
+          for (const file of files) {
+            const ext = path.extname(file).toLowerCase();
+            const filePath = path.join(step.result.tempDir, file);
+            if (['.json', '.txt', '.csv', '.html', '.png', '.jpg'].includes(ext) && 
+                !['output.xml', 'browser_state.json', 'log.html', 'report.html', 'dom.html'].includes(file)) {
+              
+              if (!resultFiles.some(rf => rf.name === file)) {
+                resultFiles.push({ tempPath: filePath, name: file });
+              }
+            }
           }
+        } catch (e) {}
+      }
+
+      // 3. Finalize and map to standardized dataStore entries
+      for (const rf of resultFiles) {
+        try {
+          const finalPath = await StorageService.finalizeResult(rf.tempPath, rf.name, toolId);
+          newlyFinalizedFiles.push(finalPath);
+
+          const ext = path.extname(rf.name).toLowerCase();
+          const key = path.basename(rf.name, ext);
+          
+          // Create a UNIFIED result entry
+          newDataStoreUpdates[key] = {
+            type: 'file',
+            format: ext.replace('.', ''),
+            path: finalPath,
+            step_intent: step.action.intent,
+            timestamp: new Date().toISOString()
+          };
+
+          // If it's JSON, we still provide the content for immediate reasoning
+          if (ext === '.json') {
+            const content = await fs.readFile(finalPath, 'utf8');
+            newDataStoreUpdates[key].data = JSON.parse(content);
+          }
+        } catch (e) {
+          await logger.error(`ResultCollector: Failed to finalize ${rf.name}: ${e.message}`);
         }
-      } catch (e) {
-        await logger.error(`결과 파일 수집 중 오류: ${e.message}`);
       }
     }
   }
 
-  // Close browser at the end of tool execution
-  try {
-    const { BrowserService } = await import('../../../services/browser_service.js');
-    await BrowserService.stopBrowser(state.sessionId);
-    await logger.info('ResultCollector: Browser process stopped.');
-  } catch (e) {
-    await logger.error(`브라우저 종료 중 오류: ${e.message}`);
+  if (!state.isSubAgent) {
+    try {
+      const { BrowserService } = await import('../../../services/browser_service.js');
+      await BrowserService.stopBrowser(state.sessionId);
+    } catch (e) {}
   }
 
   return { 
     status: 'finished',
-    extractedFiles: newlyFinalizedFiles // Update state with file paths
+    extractedFiles: newlyFinalizedFiles, // Keep for node internal state
+    dataStore: newDataStoreUpdates      // This merges into Manager's dataStore
   };
 };

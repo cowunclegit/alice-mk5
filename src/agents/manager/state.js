@@ -1,5 +1,13 @@
 import { Annotation } from "@langchain/langgraph";
 
+const reduceDataStore = (current, update) => {
+  return { ...current, ...update };
+};
+
+const reduceRetryCounts = (current, update) => {
+  return { ...current, ...update };
+};
+
 export const ManagerState = Annotation.Root({
   input: Annotation(),
   tasks: Annotation(),
@@ -8,16 +16,16 @@ export const ManagerState = Annotation.Root({
     default: () => 0,
   }),
   dataStore: Annotation({
-    reducer: (x, y) => ({ ...x, ...y }),
+    reducer: reduceDataStore,
+    default: () => ({}),
+  }),
+  retryCounts: Annotation({
+    reducer: reduceRetryCounts,
     default: () => ({}),
   }),
   status: Annotation(),
   reasoning: Annotation(),
   sessionId: Annotation(),
-  selectedResources: Annotation({
-    reducer: (x, y) => Array.from(new Set([...x, ...y])),
-    default: () => ["core.resource"],
-  }),
   history: Annotation({
     reducer: (x, y) => x.concat(y),
     default: () => [],

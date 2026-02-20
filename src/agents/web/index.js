@@ -6,5 +6,14 @@ import * as reviser from './nodes/reviser.js';
 import * as capture_dom from './nodes/capture_dom.js';
 import { graph as webGraph } from './graph.js';
 
-export const webAgent = webGraph;
+export const webAgent = {
+  invoke: async (input, config) => {
+    // Map 'intent' from handoff to 'input' for web graph
+    const state = {
+      ...input,
+      input: input.intent || input.input
+    };
+    return webGraph.invoke(state, config);
+  }
+};
 export { AgentState as WebState } from './state.js';

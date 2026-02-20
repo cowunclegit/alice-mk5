@@ -17,7 +17,6 @@ const run = async () => {
   await StorageService.init(config.storage);
   const logger = new Logger(config.logging);
   await logger.init();
-  const verbosity = config.logging?.verbosity || 'info';
   const sessionId = crypto.randomBytes(4).toString('hex');
 
   const model = new GeminiChatModel({ 
@@ -30,7 +29,7 @@ const run = async () => {
     tasks: [],
     currentTaskIndex: 0,
     dataStore: {},
-    retryCount: 0,
+    retryCounts: {},
     status: 'idle',
     sessionId: sessionId,
     history: []
@@ -40,10 +39,17 @@ const run = async () => {
   
   const graph = managerGraph();
   const result = await graph.invoke(initialState, { 
-    configurable: { model, logger },
+    configurable: { model, logger, config },
     recursionLimit: 100
   });
   
+  if (result.status === 'finished') {
+    console.log('\n==================================================');
+    console.log('FINAL SUMMARY:');
+    console.log(result.reasoning);
+    console.log('==================================================\n');
+  }
+
   await logger.info('실행이 완료되었습니다.');
 };
 

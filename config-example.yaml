@@ -11,3 +11,10 @@ logging:
   retentionLimit: 50
   verbosity: "debug"  # quiet, info, debug
   filePath: "logs/agent.log" # Optional: set to null to disable file logging
+orchestration:
+  compaction:
+    maxKeys: 10
+    strategy: "summarize"
+  preflight:
+    enabled: true
+    timeoutMs: 5000

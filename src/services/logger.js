@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { EventEmitter } from 'events';
 
 const VERBOSITY_LEVELS = {
   'quiet': 0,
@@ -7,8 +8,9 @@ const VERBOSITY_LEVELS = {
   'debug': 2
 };
 
-export class Logger {
+export class Logger extends EventEmitter {
   constructor(config = {}) {
+    super();
     this.verbosity = VERBOSITY_LEVELS[config.verbosity || 'info'] || 1;
     this.filePath = config.filePath || null;
   }
@@ -44,9 +46,11 @@ export class Logger {
         await fs.mkdir(path.dirname(this.filePath), { recursive: true });
         await fs.appendFile(this.filePath, formattedMessage + '\n');
       } catch (e) {
-        console.error(`Failed to write to log file: ${e.message}`);
+        // silent fail for file writing
       }
     }
+
+    this.emit('log', { timestamp, level, message, formattedMessage });
   }
 
   async debug(message) {
