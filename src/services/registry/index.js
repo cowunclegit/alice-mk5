@@ -8,7 +8,6 @@ export class RegistryService {
 
     try {
       if (platform === 'darwin') {
-        // macOS: Use system_profiler
         const output = execSync('system_profiler SPApplicationsDataType -json', { encoding: 'utf8' });
         const data = JSON.parse(output);
         const apps = data.SPApplicationsDataType || [];
@@ -20,8 +19,7 @@ export class RegistryService {
           });
         }
       } else if (platform === 'win32') {
-        // Windows: Query registry via PowerShell
-        const psCommand = `Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, InstallLocation, DisplayIcon | ConvertTo-Json`;
+        const psCommand = `Get-ItemProperty HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Select-Object DisplayName, InstallLocation, DisplayIcon | ConvertTo-Json`;
         const output = execSync(`powershell -Command "${psCommand}"`, { encoding: 'utf8' });
         const data = JSON.parse(output);
         const apps = Array.isArray(data) ? data : [data];
@@ -46,7 +44,6 @@ export class RegistryService {
     const apps = await this.discoverApps();
     const normalizedSearch = appName.toLowerCase().normalize('NFC');
     
-    // Fuzzy match: check if name contains or is contained in appName
     const match = apps.find(app => {
       const normalizedName = app.name.toLowerCase().normalize('NFC');
       return normalizedName.includes(normalizedSearch) || normalizedSearch.includes(normalizedName);
@@ -55,17 +52,27 @@ export class RegistryService {
     if (!match) return null;
 
     const platform = os.platform();
+    
+    // Hardcoded fallback for common macOS system apps if identifier is missing
+    let bundleId = match.identifier;
+    if (platform === 'darwin' && !bundleId) {
+      if (match.name.includes('계산기') || match.name.toLowerCase().includes('calculator')) {
+        bundleId = 'com.apple.calculator';
+      }
+    }
+
     return {
       platformName: platform === 'darwin' ? 'Mac' : 'Windows',
-      // For macOS, bundleId is much more reliable than path
-      app: platform === 'darwin' ? (match.identifier || match.path) : match.path,
+      // For macOS, bundleId is much more reliable
+      app: platform === 'darwin' ? (bundleId || match.path) : match.path,
       automationName: platform === 'darwin' ? 'Mac2' : 'Windows',
       deviceName: 'Mac',
-      'appium:bundleId': platform === 'darwin' ? match.identifier : undefined,
+      'appium:bundleId': platform === 'darwin' ? bundleId : undefined,
       'appium:showServerLogs': true,
       'appium:serverConnectTimeout': 90000,
       'appium:noReset': true,
-      'appium:forceAppLaunch': true
+      'appium:forceAppLaunch': true,
+      'appium:waitForQuiescence': false // Don't wait for app to be idle, might help with 500 error
     };
   }
 }

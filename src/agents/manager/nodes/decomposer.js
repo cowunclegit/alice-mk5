@@ -1,48 +1,68 @@
 import { extractAndParseJSON } from '../../../lib/json_utils.js';
 import fs from 'fs/promises';
 import path from 'path';
+import { StorageService } from '../../../services/storage_service.js';
 
 export const decomposer = async (state, config) => {
   const logger = config.configurable.logger;
   const model = config.configurable.model;
 
-  await logger.info('Manager: Decomposing user intent into high-level platform tasks.');
+  await logger.info('Manager: Decomposing user intent and checking for available tools.');
 
-  // Read high-level info from core resources
+  // 1. Read high-level info from core resources
   let webCapabilities = "";
   let appCapabilities = "";
-  
   try {
     const webCore = await fs.readFile(path.join(process.cwd(), 'src/robots/resources/web/core.resource'), 'utf8');
     webCapabilities = webCore.split('*** Keywords ***')[1] || "";
   } catch (e) {}
-
   try {
     const appCore = await fs.readFile(path.join(process.cwd(), 'src/robots/resources/application/core.resource'), 'utf8');
     appCapabilities = appCore.split('*** Keywords ***')[1] || "";
   } catch (e) {}
 
-  const systemPrompt = `You are a high-level task decomposer for a multi-agent system.
-Your job is to assign tasks to the correct platform (web or application).
+  // 2. Read available TOOLS
+  let availableTools = [];
+  try {
+    const webToolsDir = path.join(StorageService.toolsDir, 'web');
+    const files = await fs.readdir(webToolsDir);
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        const content = await fs.readFile(path.join(webToolsDir, file), 'utf8');
+        const tool = JSON.parse(content);
+        availableTools.push({
+          id: tool.id,
+          title: tool.title,
+          description: tool.description,
+          variables: tool.variables
+        });
+      }
+    }
+  } catch (e) {}
 
-### PLATFORM GUIDELINES:
-- **web**: Use this for ALL tasks involving websites, including searching, clicking, and EXTRACTING/SAVING data from the web to files.
-- **application**: Use this ONLY when a specific LOCAL desktop app (e.g., Notepad, Excel, Calculator) needs to be opened or controlled.
-- **Summarization/Reporting**: DO NOT create tasks for "Telling the user", "Providing file locations", or "Summarizing results". The Manager handles this automatically at the end.
+  const systemPrompt = `You are a high-level strategic orchestrator for a multi-agent system.
+Your job is to break the user's intent into a few COHESIVE, HIGH-LEVEL tasks.
 
-### KEYWORD REFERENCE:
-WEB AGENT: ${webCapabilities}
-APP AGENT: ${appCapabilities}
+### AVAILABLE TOOLS (PRIORITIZE THESE):
+${JSON.stringify(availableTools, null, 2)}
+
+### SUB-AGENT CAPABILITIES:
+- web: ${webCapabilities.slice(0, 300)}...
+- application: ${appCapabilities.slice(0, 300)}...
 
 ### CRITICAL RULES:
-1. If the user says "Search Naver and save results", this is ONE 'web' task.
-2. If the user says "Tell me the file location", do NOT create a task. The Manager will see the saved file in the data_store and report it.
-3. Respond ONLY with a JSON object:
+1. USE EXISTING TOOLS: If a tool like 'hanroro' matches the goal, use it as a single task. 
+   - Intent format for tools: "Use tool '[tool_id]' with [variable]='[value]'"
+2. DO NOT MICROMANAGE: Do not break web tasks into "Open Browser", "Click", "Type". 
+   - Good Web Intent: "Search Naver for 'X', extract news results, and save them to a file."
+   - Bad Web Intent: "Step 1: Open browser. Step 2: Type X..."
+3. ONE TASK PER PLATFORM SHIFT: If the user wants to search Web and then write to Notepad, create ONE 'web' task and ONE 'application' task.
+4. Respond ONLY with a JSON object:
 {
   "tasks": [
-    { "id": "T1", "platform": "web | application", "intent": "Cohesive goal (e.g. 'Search Naver news and save to JSON')" }
+    { "id": "T1", "platform": "web | application", "intent": "A high-level goal that the sub-agent's internal planner can understand" }
   ],
-  "reasoning": "Explain why you chose this platform"
+  "reasoning": "Why you chose this high-level split"
 }
 `;
 

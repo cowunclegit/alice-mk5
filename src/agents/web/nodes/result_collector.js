@@ -43,13 +43,17 @@ export const resultCollector = async (state, config) => {
       // 3. Finalize and map to standardized dataStore entries
       for (const rf of resultFiles) {
         try {
+          // Prevent duplicate processing of the same file in the same run
+          if (newlyFinalizedFiles.some(f => f.endsWith(rf.name))) continue;
+
           const finalPath = await StorageService.finalizeResult(rf.tempPath, rf.name, toolId);
           newlyFinalizedFiles.push(finalPath);
 
           const ext = path.extname(rf.name).toLowerCase();
           const key = path.basename(rf.name, ext);
           
-          // Create a UNIFIED result entry
+          await logger.debug(`ResultCollector: Standardizing ${rf.name} -> key: ${key}`);
+
           newDataStoreUpdates[key] = {
             type: 'file',
             format: ext.replace('.', ''),
@@ -58,7 +62,6 @@ export const resultCollector = async (state, config) => {
             timestamp: new Date().toISOString()
           };
 
-          // If it's JSON, we still provide the content for immediate reasoning
           if (ext === '.json') {
             const content = await fs.readFile(finalPath, 'utf8');
             newDataStoreUpdates[key].data = JSON.parse(content);
@@ -70,6 +73,8 @@ export const resultCollector = async (state, config) => {
     }
   }
 
+  await logger.info(`ResultCollector: Successfully collected ${Object.keys(newDataStoreUpdates).length} result entries.`);
+
   if (!state.isSubAgent) {
     try {
       const { BrowserService } = await import('../../../services/browser_service.js');
@@ -79,7 +84,7 @@ export const resultCollector = async (state, config) => {
 
   return { 
     status: 'finished',
-    extractedFiles: newlyFinalizedFiles, // Keep for node internal state
-    dataStore: newDataStoreUpdates      // This merges into Manager's dataStore
+    extractedFiles: newlyFinalizedFiles,
+    dataStore: newDataStoreUpdates
   };
 };

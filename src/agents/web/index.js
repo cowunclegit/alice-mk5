@@ -8,10 +8,11 @@ import { graph as webGraph } from './graph.js';
 
 export const webAgent = {
   invoke: async (input, config) => {
-    // Map 'intent' from handoff to 'input' for web graph
+    // Standardize input mapping from Manager
     const state = {
       ...input,
-      input: input.intent || input.input
+      input: input.intent || input.input,
+      originalInput: input.originalInput // Ensure this is passed
     };
     return webGraph.invoke(state, config);
   }

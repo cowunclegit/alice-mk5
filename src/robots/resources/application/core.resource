@@ -6,7 +6,7 @@ Library    Collections
 *** Keywords ***
 Open Application Session
     [Arguments]    ${remote_url}    ${platform_name}    ${app_identifier}    ${automation_name}    ${device_name}
-    # Open Application will either start a new session or reconnect if configured correctly
+    # Open Application will either start a new session or reconnect
     Open Application    ${remote_url}
     ...    platformName=${platform_name}
     ...    app=${app_identifier}
@@ -14,7 +14,7 @@ Open Application Session
     ...    deviceName=${device_name}
     ...    newCommandTimeout=3600
     
-    # Wait for app to be ready and in foreground
+    # Wait for app to be ready
     Sleep    5s
 
 Type Into Application Element
@@ -29,7 +29,16 @@ Click Application Element
 
 Capture App UI XML
     [Arguments]    ${filename}=app_source.xml
-    ${xml}=    Get Source
+    # Retry Get Source if it fails (workaround for Mac2Driver 500 error)
+    ${xml}=    Run Keyword And Ignore Error    Get Source
+    
+    IF    '${xml[0]}' == 'FAIL'
+        Sleep    3s
+        ${xml}=    Get Source
+    ELSE
+        ${xml}=    Set Variable    ${xml[1]}
+    END
+
     Create File    ${OUTPUT DIR}${/}${filename}    ${xml}
     RETURN    ${xml}
 
