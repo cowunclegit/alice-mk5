@@ -9,7 +9,8 @@ export const approver = async (state, config) => {
 
   await logger.info('\n--- PROPOSED EXECUTION PLAN ---');
   state.tasks.forEach(t => {
-    console.log(`[${t.id}] [${t.platform.toUpperCase()}] ${t.intent}`);
+    const platform = (t.platform || t.tool || 'unknown').replace('_agent', '');
+    console.log(`[${t.id}] [${platform.toUpperCase()}] ${t.intent}`);
   });
   console.log('-------------------------------\n');
 

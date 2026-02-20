@@ -21,24 +21,21 @@ export const managerGraph = () => {
   
   workflow.addConditionalEdges("approver", (state) => {
     if (state.status === 'executing') return "executor";
-    return "finalizer";
+    return END;
   });
 
   workflow.addConditionalEdges("executor", (state) => {
-    // If a task failed, try auto-fix
     if (state.status === 'error') return "auto_fix";
     
-    // If more tasks remain, keep executing
+    // If successful and more tasks remain, go to next task via executor
     if (state.currentTaskIndex < state.tasks.length) return "executor";
     
-    // All tasks done (or skipped) -> Summarize
+    // All tasks completed
     return "summarizer";
   });
 
   workflow.addConditionalEdges("auto_fix", (state) => {
-    // If auto-fix decided to try again
     if (state.status === 'executing') return "executor";
-    // If auto-fix gave up -> go to summary to show what we have
     return "summarizer";
   });
 

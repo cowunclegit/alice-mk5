@@ -17,7 +17,7 @@ export const autoFix = async (state, config) => {
 A sub-agent task has failed. Analyze the error and original intent to provide a REVISED sub-intent for the same platform.
 
 ### RULES:
-- Keep the same platform: ${currentTask.platform}.
+- Keep the same platform: ${currentTask.platform || currentTask.tool}.
 - Suggest a slightly different approach or more detailed sub-intent to bypass the failure.
 - Respond ONLY with a JSON object:
 {

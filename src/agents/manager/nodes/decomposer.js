@@ -1,68 +1,36 @@
 import { extractAndParseJSON } from '../../../lib/json_utils.js';
-import fs from 'fs/promises';
-import path from 'path';
-import { StorageService } from '../../../services/storage_service.js';
 
 export const decomposer = async (state, config) => {
   const logger = config.configurable.logger;
   const model = config.configurable.model;
 
-  await logger.info('Manager: Decomposing user intent and checking for available tools.');
+  await logger.info('Manager: Planning tasks using available agents as tools.');
 
-  // 1. Read high-level info from core resources
-  let webCapabilities = "";
-  let appCapabilities = "";
-  try {
-    const webCore = await fs.readFile(path.join(process.cwd(), 'src/robots/resources/web/core.resource'), 'utf8');
-    webCapabilities = webCore.split('*** Keywords ***')[1] || "";
-  } catch (e) {}
-  try {
-    const appCore = await fs.readFile(path.join(process.cwd(), 'src/robots/resources/application/core.resource'), 'utf8');
-    appCapabilities = appCore.split('*** Keywords ***')[1] || "";
-  } catch (e) {}
+  const systemPrompt = `You are a strategic orchestrator. 
+Decompose the user's request into high-level tasks that can be fulfilled by the following AGENT TOOLS.
 
-  // 2. Read available TOOLS
-  let availableTools = [];
-  try {
-    const webToolsDir = path.join(StorageService.toolsDir, 'web');
-    const files = await fs.readdir(webToolsDir);
-    for (const file of files) {
-      if (file.endsWith('.json')) {
-        const content = await fs.readFile(path.join(webToolsDir, file), 'utf8');
-        const tool = JSON.parse(content);
-        availableTools.push({
-          id: tool.id,
-          title: tool.title,
-          description: tool.description,
-          variables: tool.variables
-        });
-      }
-    }
-  } catch (e) {}
+### AVAILABLE AGENT TOOLS:
+1. web_agent: For any website interactions, searching, scraping, and navigation.
+2. filesystem_agent: For reading/writing local files and managing data persistence.
+3. application_agent: For any local desktop software interactions (Notepad, Calculator, etc).
 
-  const systemPrompt = `You are a high-level strategic orchestrator for a multi-agent system.
-Your job is to break the user's intent into a few COHESIVE, HIGH-LEVEL tasks.
-
-### AVAILABLE TOOLS (PRIORITIZE THESE):
-${JSON.stringify(availableTools, null, 2)}
-
-### SUB-AGENT CAPABILITIES:
-- web: ${webCapabilities.slice(0, 300)}...
-- application: ${appCapabilities.slice(0, 300)}...
-
-### CRITICAL RULES:
-1. USE EXISTING TOOLS: If a tool like 'hanroro' matches the goal, use it as a single task. 
-   - Intent format for tools: "Use tool '[tool_id]' with [variable]='[value]'"
-2. DO NOT MICROMANAGE: Do not break web tasks into "Open Browser", "Click", "Type". 
-   - Good Web Intent: "Search Naver for 'X', extract news results, and save them to a file."
-   - Bad Web Intent: "Step 1: Open browser. Step 2: Type X..."
-3. ONE TASK PER PLATFORM SHIFT: If the user wants to search Web and then write to Notepad, create ONE 'web' task and ONE 'application' task.
-4. Respond ONLY with a JSON object:
+### RULES:
+1. Break complex requests into sequential steps.
+2. Assign each step to the correct AGENT TOOL.
+   - Use 'web' for 'web_agent'
+   - Use 'filesystem' for 'filesystem_agent': Managing file persistence and extracting specific variables for the shared 'dataStore'.
+   - Use 'application' for 'application_agent': Interacting with local GUI software.
+3. DATA DEPENDENCY: 
+   - Ensure data required for a step is explicitly extracted or prepared by a preceding step.
+   - Use 'filesystem_agent' to bridge data between tools if one tool's output needs to be parsed for another tool's input.
+   - Reference keys in the 'dataStore' explicitly in the intent (e.g., "Use the 'key_name' from dataStore").
+4. TOOL INTENT: Provide a cohesive and goal-oriented intent for each tool, focusing on the expected outcome.
+5. Respond ONLY with a JSON object:
 {
   "tasks": [
-    { "id": "T1", "platform": "web | application", "intent": "A high-level goal that the sub-agent's internal planner can understand" }
+    { "id": "T1", "platform": "web | filesystem | application", "tool": "web_agent | filesystem_agent | application_agent", "intent": "Objective for the tool. Reference dataStore keys if necessary." }
   ],
-  "reasoning": "Why you chose this high-level split"
+  "reasoning": "Orchestration strategy"
 }
 `;
 

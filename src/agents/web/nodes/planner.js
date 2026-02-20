@@ -48,14 +48,17 @@ ${JSON.stringify(state.dataStore || {})}
 ### CRITICAL RULES:
 1. Use ONLY the keywords defined in the resources above.
 2. Every step MUST include the exact "keyword" name and its "args" array.
-3. If an available TOOL exactly matches the user request, you can use the "Run Tool" keyword with the tool name as the first argument.
+3. DATA USAGE: If a required value exists in the AVAILABLE DATA, use that value directly in the "args". 
+   - DO NOT re-extract if already available in context.
+   - Example: To visit a specific target, use the corresponding navigation keyword with that target.
+4. If an available TOOL matches the request, use "Run Tool" with the tool name as the first argument.
 
 Respond ONLY with a JSON object:
 {
   "plan": [
-    { "intent": "Goal", "keyword": "Exact Keyword Name", "args": ["val1"] }
+    { "intent": "Objective", "keyword": "Exact Keyword Name", "args": ["arg1"] }
   ],
-  "reasoning": "Why"
+  "reasoning": "Plan logic"
 }
 `;
 
