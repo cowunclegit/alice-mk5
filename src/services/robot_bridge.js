@@ -4,7 +4,7 @@ import path from 'path';
 import { BrowserService } from './browser_service.js';
 
 export class RobotBridge {
-  static async runSequence(actions, stepNumber = 1, sessionId = 'unknown', selectedResources = ['core.resource'], logger = null) {
+  static async runSequence(actions, stepLabel = '1', sessionId = 'unknown', selectedResources = ['core.resource'], logger = null) {
     const sessionDir = path.join(process.cwd(), 'tmp_robot', `session-${sessionId}`);
     await fs.mkdir(sessionDir, { recursive: true });
 
@@ -15,8 +15,8 @@ export class RobotBridge {
       debugPort = await BrowserService.startBrowser(sessionId);
     }
     
-    const robotFile = path.join(sessionDir, `step-${stepNumber}.robot`);
-    const varsFile = path.join(sessionDir, `vars-${stepNumber}.py`);
+    const robotFile = path.join(sessionDir, `step-${stepLabel}.robot`);
+    const varsFile = path.join(sessionDir, `vars-${stepLabel}.py`);
     
     const baseResourceDir = path.join(process.cwd(), 'src/robots/resources');
     const resourceSettings = selectedResources
@@ -70,7 +70,7 @@ ${resourceSettings}
 Variables    ${varsFile}
 
 *** Test Cases ***
-Step ${stepNumber} Execution
+Step ${stepLabel} Execution
 ${testSteps}
 `;
 
@@ -83,7 +83,7 @@ DEBUG_PORT = ${debugPort}
     await fs.writeFile(robotFile, content);
 
     return new Promise((resolve) => {
-      const outputDir = path.join(sessionDir, `logs-step-${stepNumber}`);
+      const outputDir = path.join(sessionDir, `logs-step-${stepLabel}`);
       const robotProcess = spawn('robot', ['--outputdir', outputDir, robotFile]);
       let stdout = '';
       let stderr = '';
@@ -117,13 +117,15 @@ DEBUG_PORT = ${debugPort}
           stdout,
           stderr,
           tempDir: outputDir,
+          robotFile,
+          varsFile,
           savedFilePath: savedPath
         });
       });
     });
   }
 
-  static async runKeyword(keyword, args = [], sessionId = 'unknown', selectedResources = ['core.resource'], logger = null) {
-    return this.runSequence([{ keyword, args }], 1, sessionId, selectedResources, logger);
+  static async runKeyword(keyword, args = [], sessionId = 'unknown', selectedResources = ['core.resource'], logger = null, stepLabel = '1') {
+    return this.runSequence([{ keyword, args }], stepLabel, sessionId, selectedResources, logger);
   }
 }

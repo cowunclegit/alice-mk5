@@ -1,0 +1,39 @@
+openapi: 3.0.0
+info:
+  title: Alice MK5 Tool Management
+  version: 1.0.0
+paths:
+  /tools:
+    get:
+      summary: List all available tools from the catalog
+      responses:
+        '200':
+          description: A list of tool summaries
+    post:
+      summary: Save a new optimized tool from a session
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId, toolId, title]
+              properties:
+                sessionId: { type: string }
+                toolId: { type: string }
+                title: { type: string }
+                validateBeforeSave: { type: boolean, default: true }
+  /tools/{toolId}/execute:
+    post:
+      summary: Invoke a tool using the Fixed_Step_Executor
+      parameters:
+        - name: toolId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                variables: { type: object, additionalProperties: true }

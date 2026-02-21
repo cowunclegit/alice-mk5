@@ -5,6 +5,7 @@ export class StorageService {
   static baseDir = path.join(process.cwd(), 'src/memory');
   static toolsDir = path.join(process.cwd(), 'src/robots/tools');
   static resultsDir = path.join(process.cwd(), 'src/memory/data');
+  static catalogPath = path.join(process.cwd(), 'src/memory/tools/catalog.json');
 
   static async init(config = {}) {
     if (config.resultsDir) {
@@ -15,6 +16,88 @@ export class StorageService {
     await fs.mkdir(this.resultsDir, { recursive: true });
     await fs.mkdir(path.join(this.toolsDir, 'web'), { recursive: true });
     await fs.mkdir(path.join(this.toolsDir, 'application'), { recursive: true });
+    await fs.mkdir(path.join(this.toolsDir, 'cross-platform'), { recursive: true });
+    
+    // Ensure catalog exists
+    try {
+      await fs.access(this.catalogPath);
+    } catch (e) {
+      await fs.mkdir(path.dirname(this.catalogPath), { recursive: true });
+      await fs.writeFile(this.catalogPath, JSON.stringify({ tools: [], last_updated: new Date().toISOString() }, null, 2));
+    }
+  }
+
+  static async saveToolSnapshot(manifest, scripts = []) {
+    const toolId = manifest.id;
+    const platform = manifest.platform || 'web';
+    const toolDir = path.join(this.toolsDir, platform, toolId);
+    
+    await fs.mkdir(toolDir, { recursive: true });
+    
+    // 1. Save Manifest
+    const manifestPath = path.join(toolDir, 'manifest.json');
+    await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
+    
+    // 2. Copy scripts
+    for (const scriptPath of scripts) {
+      const fileName = path.basename(scriptPath);
+      const destPath = path.join(toolDir, fileName);
+      await fs.copyFile(scriptPath, destPath);
+    }
+    
+    // 3. Update Catalog
+    await this.updateCatalog(manifest);
+    
+    return toolDir;
+  }
+
+  static async updateCatalog(manifest) {
+    let catalog = { tools: [], last_updated: new Date().toISOString() };
+    try {
+      const content = await fs.readFile(this.catalogPath, 'utf8');
+      catalog = JSON.parse(content);
+    } catch (e) {}
+    
+    const existingIndex = catalog.tools.findIndex(t => t.id === manifest.id);
+    const summary = {
+      id: manifest.id,
+      title: manifest.title,
+      description: manifest.description,
+      platform: manifest.platform,
+      version: manifest.version,
+      last_updated: new Date().toISOString()
+    };
+    
+    if (existingIndex >= 0) {
+      catalog.tools[existingIndex] = summary;
+    } else {
+      catalog.tools.push(summary);
+    }
+    
+    catalog.last_updated = new Date().toISOString();
+    await fs.writeFile(this.catalogPath, JSON.stringify(catalog, null, 2));
+  }
+
+  static async loadToolManifest(toolId, platform = 'web') {
+    const manifestPath = path.join(this.toolsDir, platform, toolId, 'manifest.json');
+    const content = await fs.readFile(manifestPath, 'utf8');
+    return JSON.parse(content);
+  }
+
+  static async recordToolExecution(toolId, input, status, lastResult = null) {
+    const historyDir = path.join(this.baseDir, 'tools_history');
+    await fs.mkdir(historyDir, { recursive: true });
+    
+    const entry = {
+      toolId,
+      input,
+      status,
+      timestamp: new Date().toISOString(),
+      lastResult
+    };
+    
+    const fileName = `${toolId}_${new Date().getTime()}.json`;
+    await fs.writeFile(path.join(historyDir, fileName), JSON.stringify(entry, null, 2));
   }
 
   static async saveSequence(sequence, platform = 'web') {

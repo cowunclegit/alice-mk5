@@ -74,6 +74,7 @@ Capture DOM Source
     ${html}=    Get Source
     ${path}=    Set Variable    ${OUTPUT DIR}${/}${filename}
     Create File    ${path}    ${html}
+    Log To Console    SAVED_FILE_PATH: ${path}
     RETURN    ${path}
 
 Extract Element Data
@@ -81,6 +82,7 @@ Extract Element Data
     ${texts}=    Get Text    ${selector}
     ${path}=    Set Variable    ${OUTPUT DIR}${/}${filename}
     Create File    ${path}    ${texts}
+    Log To Console    SAVED_FILE_PATH: ${path}
     RETURN    ${path}
 
 Save List Data
@@ -103,7 +105,7 @@ Save List Data
     
     Create File    ${path}    ${json_string}
     # Return path so it appears in log
-    Log    SAVED_FILE_PATH: ${path}
+    Log To Console    SAVED_FILE_PATH: ${path}
     RETURN    ${path}
 
 Extract All Links
@@ -111,6 +113,7 @@ Extract All Links
     ${links}=    Get Element Attribute    ${selector}    href
     ${path}=    Set Variable    ${OUTPUT DIR}${/}${filename}
     Create File    ${path}    ${links}
+    Log To Console    SAVED_FILE_PATH: ${path}
     RETURN    ${path}
 
 Close Session Browser

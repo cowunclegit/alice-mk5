@@ -39,8 +39,10 @@ Capture App UI XML
         ${xml}=    Set Variable    ${xml[1]}
     END
 
-    Create File    ${OUTPUT DIR}${/}${filename}    ${xml}
-    RETURN    ${xml}
+    ${path}=    Set Variable    ${OUTPUT DIR}${/}${filename}
+    Create File    ${path}    ${xml}
+    Log To Console    SAVED_FILE_PATH: ${path}
+    RETURN    ${path}
 
 Quit Application Session
     Close Application

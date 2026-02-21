@@ -8,6 +8,10 @@ const reduceRetryCounts = (current, update) => {
   return { ...current, ...update };
 };
 
+const reduceLineage = (current, update) => {
+  return { ...current, ...update };
+};
+
 export const ManagerState = Annotation.Root({
   input: Annotation(),
   tasks: Annotation(),
@@ -30,4 +34,19 @@ export const ManagerState = Annotation.Root({
     reducer: (x, y) => x.concat(y),
     default: () => [],
   }),
+  lineage: Annotation({
+    reducer: reduceLineage,
+    default: () => ({}),
+  }),
+  clean_history: Annotation({
+    reducer: (x, y) => y ?? x,
+    default: () => [],
+  }),
+  toolId: Annotation(),
+  platform: Annotation(),
+  variables: Annotation({
+    reducer: (x, y) => ({ ...x, ...y }),
+    default: () => ({}),
+  }),
+  manifest: Annotation(),
 });

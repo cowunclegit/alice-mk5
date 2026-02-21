@@ -48,10 +48,11 @@ ${JSON.stringify(state.dataStore || {})}
 ### CRITICAL RULES:
 1. Use ONLY the keywords defined in the resources above.
 2. Every step MUST include the exact "keyword" name and its "args" array.
-3. DATA USAGE: If a required value exists in the AVAILABLE DATA, use that value directly in the "args". 
-   - DO NOT re-extract if already available in context.
-   - Example: To visit a specific target, use the corresponding navigation keyword with that target.
-4. If an available TOOL matches the request, use "Run Tool" with the tool name as the first argument.
+3. **STATE AWARENESS: If the current task is about "extracting" or "clicking" and you are likely already on the correct page from a previous task, DO NOT generate a "Search" or "Navigate" step again unless absolutely necessary.**
+4. DATA USAGE: If a required value (like a URL) exists in the AVAILABLE DATA, use that value directly in the "args". 
+   - **THOROUGH SCAN: Carefully scan the entire AVAILABLE DATA JSON for the required value. It might be nested inside other objects.**
+   - Example: To visit a specific target URL found in dataStore, use "Navigate To URL" with that exact URL.
+5. If an available TOOL matches the request, use "Run Tool" with the tool name as the first argument.
 
 Respond ONLY with a JSON object:
 {

@@ -47,7 +47,9 @@ export const executor = async (state, config) => {
   
   actions.push({ keyword, args: finalArgs });
 
-  const result = await RobotBridge.runSequence(actions, state.completedSteps.length + 1, state.sessionId, state.selectedResources, logger);
+  const stepNumber = state.completedSteps.length + 1;
+  const stepLabel = state.taskId ? `${state.taskId}-${stepNumber}` : stepNumber;
+  const result = await RobotBridge.runSequence(actions, stepLabel, state.sessionId, state.selectedResources, logger);
 
   if (result.status === 'pass') {
     await logger.info(`AppExecutor: Success.`);

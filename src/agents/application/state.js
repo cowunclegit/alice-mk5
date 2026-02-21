@@ -28,6 +28,7 @@ export const AppState = Annotation.Root({
     default: () => ["application/core.resource"],
   }),
   isSubAgent: Annotation(),
+  taskId: Annotation(),
   dataStore: Annotation({
     reducer: (x, y) => ({ ...x, ...y }),
     default: () => ({}),

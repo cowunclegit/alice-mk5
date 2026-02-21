@@ -75,6 +75,15 @@ export const resultCollector = async (state, config) => {
 
   await logger.info(`ResultCollector: Successfully collected ${Object.keys(newDataStoreUpdates).length} result entries.`);
 
+  // Determine final status based on whether any steps were actually successful
+  const lastStep = state.completedSteps[state.completedSteps.length - 1];
+  const hasSuccessfulStep = state.completedSteps.some(s => s.status === 'pass');
+  let finalStatus = 'finished';
+  
+  if (state.completedSteps.length === 0 || (lastStep && lastStep.status === 'fail')) {
+    finalStatus = 'error';
+  }
+
   if (!state.isSubAgent) {
     try {
       const { BrowserService } = await import('../../../services/browser_service.js');
@@ -83,7 +92,7 @@ export const resultCollector = async (state, config) => {
   }
 
   return { 
-    status: 'finished',
+    status: finalStatus,
     extractedFiles: newlyFinalizedFiles,
     dataStore: newDataStoreUpdates
   };

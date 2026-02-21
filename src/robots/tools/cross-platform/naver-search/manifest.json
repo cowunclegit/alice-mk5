@@ -1,0 +1,46 @@
+{
+  "id": "naver-search",
+  "title": "네이버 뉴스 검색",
+  "description": "네이버 뉴스 검색 후 top3 중 처음 링크 진입",
+  "platform": "cross-platform",
+  "version": "1.0.0",
+  "variables": [],
+  "environment": {
+    "os": "darwin",
+    "arch": "x64",
+    "node_version": "v24.4.1",
+    "resolution": null,
+    "timestamp": "2026-02-21T08:50:42.420Z"
+  },
+  "steps": [
+    {
+      "intent": "click news tab",
+      "keyword": "Click Naver News Tab",
+      "args": []
+    },
+    {
+      "intent": "extract news data",
+      "keyword": "Extract Naver News Results",
+      "args": []
+    },
+    {
+      "intent": "Navigate to the first URL from the extracted news data",
+      "keyword": "Navigate To URL",
+      "args": [
+        "https://www.starnewskorea.com/music/2026/02/21/2026022108383860762"
+      ]
+    }
+  ],
+  "scripts": [
+    "step-T2-1.robot",
+    "vars-T2-1.py",
+    "step-T2-2.robot",
+    "vars-T2-2.py",
+    "step-T6-1.robot",
+    "vars-T6-1.py"
+  ],
+  "metadata": {
+    "originalPrompt": "네이버에서 한로로 검색하고 뉴스탭에서 뉴스 타이틀과 링크 추출해서 저장해주고 파일 path알려주고 뉴스 Top3 추출해주고 Top3중 첫번째 URL에 접속해줘",
+    "createdAt": "2026-02-21T08:51:08.598Z"
+  }
+}

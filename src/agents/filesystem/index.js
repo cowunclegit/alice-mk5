@@ -25,7 +25,8 @@ ${JSON.stringify(dataStore)}
 ### RULES:
 1. Use 'src/memory/data' as the default directory for file operations.
 2. For "extract_to_context", identify the most relevant data points required for subsequent tasks and map them to descriptive keys in 'extractedKeys'.
-3. Respond ONLY with a JSON object:
+3. **CRITICAL: NEVER invent, hallucinate, or provide placeholder data.** If the required data is not present in the SHARED CONTEXT DATA or the target file, you MUST report that it is missing in the 'reasoning' and return an error status or empty 'extractedKeys'. Do not use example domains like 'example.com' unless they are actually in the context.
+4. Respond ONLY with a JSON object:
 {
   "action": "write_file | read_file | list_files | extract_to_context",
   "filePath": "path/to/file (if applicable)",

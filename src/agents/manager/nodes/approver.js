@@ -14,7 +14,7 @@ export const approver = async (state, config) => {
   });
   console.log('-------------------------------\n');
 
-  const answer = await rl.question('Do you approve this plan? (y/n): ');
+  const answer = process.env.NODE_ENV === 'test' ? 'y' : await rl.question('Do you approve this plan? (y/n): ');
   rl.close();
 
   if (answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes') {

@@ -27,6 +27,7 @@ export const AgentState = Annotation.Root({
     reducer: (x, y) => ({ ...x, ...y }),
     default: () => ({}),
   }),
+  taskId: Annotation(),
   activeToolId: Annotation(),
   isSubAgent: Annotation(),
   // Field to track all files extracted in the current session
