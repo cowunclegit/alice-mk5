@@ -115,7 +115,7 @@ DEBUG_PORT = ${debugPort}
         const line = data.toString();
         stdout += line;
         if (logger) {
-          logger.debug(`[Robot] ${line.trim()}`);
+          logger.debug(`[Robot] [${stepLabel}] ${line.trim()}`);
         }
       });
       
@@ -123,7 +123,7 @@ DEBUG_PORT = ${debugPort}
         const line = data.toString();
         stderr += line;
         if (logger) {
-          logger.error(`[Robot Error] ${line.trim()}`);
+          logger.error(`[Robot Error] [${stepLabel}] ${line.trim()}`);
         }
       });
 

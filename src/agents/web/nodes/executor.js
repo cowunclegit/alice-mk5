@@ -8,9 +8,9 @@ export const executor = async (state, config) => {
   }
 
   const { keyword, args } = state.currentStep;
-  await logger.info(`WebExecutor: Running "${keyword}" with args: ${JSON.stringify(args)}`);
+  await logger.info(`[${state.taskId || 'Web'}] WebExecutor: Running "${keyword}" with args: ${JSON.stringify(args)}`);
 
-  const result = await RobotBridge.runKeyword(keyword, args, state.sessionId, state.selectedResources, logger, '1', state.dataStore);
+  const result = await RobotBridge.runKeyword(keyword, args, state.sessionId, state.selectedResources, logger, state.taskId || '1', state.dataStore);
 
   return {
     status: 'executing',

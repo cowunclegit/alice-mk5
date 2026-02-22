@@ -1,0 +1,33 @@
+openapi: 3.0.0
+info:
+  title: Internal Agent Node Interfaces
+  version: 1.0.0
+paths:
+  /manager/decomposer:
+    post:
+      summary: Split intent into sequential tasks
+      responses:
+        '200':
+          description: List of tasks
+  /web-agent/analyzer:
+    post:
+      summary: Analyze current DOM using AXTree and map intent to selector
+      parameters:
+        - name: axTree
+          in: body
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/AXNode'
+      responses:
+        '200':
+          description: Chosen selector and reasoning
+components:
+  schemas:
+    AXNode:
+      type: object
+      properties:
+        refId: { type: string }
+        role: { type: string }
+        name: { type: string }
+        selector: { type: string }
