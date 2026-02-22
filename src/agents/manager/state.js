@@ -1,20 +1,14 @@
 import { Annotation } from "@langchain/langgraph";
 
-const reduceDataStore = (current, update) => {
-  return { ...current, ...update };
-};
-
-const reduceRetryCounts = (current, update) => {
-  return { ...current, ...update };
-};
-
-const reduceLineage = (current, update) => {
-  return { ...current, ...update };
-};
+const reduceDataStore = (current, update) => ({ ...current, ...update });
+const reduceHistory = (current, update) => current.concat(update);
 
 export const ManagerState = Annotation.Root({
   input: Annotation(),
-  tasks: Annotation(),
+  tasks: Annotation({
+    reducer: (x, y) => y ?? x,
+    default: () => [],
+  }),
   currentTaskIndex: Annotation({
     reducer: (x, y) => y ?? x,
     default: () => 0,
@@ -23,31 +17,22 @@ export const ManagerState = Annotation.Root({
     reducer: reduceDataStore,
     default: () => ({}),
   }),
-  retryCounts: Annotation({
-    reducer: reduceRetryCounts,
-    default: () => ({}),
+  history: Annotation({
+    reducer: reduceHistory,
+    default: () => [],
   }),
-  status: Annotation(),
+  replanCount: Annotation({
+    reducer: (x, y) => y ?? x,
+    default: () => 0,
+  }),
+  status: Annotation({
+    reducer: (x, y) => y ?? x,
+    default: () => 'idle',
+  }),
   reasoning: Annotation(),
   sessionId: Annotation(),
-  history: Annotation({
-    reducer: (x, y) => x.concat(y),
-    default: () => [],
-  }),
   lineage: Annotation({
-    reducer: reduceLineage,
-    default: () => ({}),
-  }),
-  clean_history: Annotation({
-    reducer: (x, y) => y ?? x,
-    default: () => [],
-  }),
-  toolId: Annotation(),
-  platform: Annotation(),
-  variables: Annotation({
     reducer: (x, y) => ({ ...x, ...y }),
     default: () => ({}),
   }),
-  manifest: Annotation(),
-  resource_proposal: Annotation(),
 });

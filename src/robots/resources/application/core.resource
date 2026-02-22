@@ -44,5 +44,13 @@ Capture App UI XML
     Log To Console    SAVED_FILE_PATH: ${path}
     RETURN    ${path}
 
+Capture Application Accessibility State
+    [Arguments]    ${filename}=app_axtree.json
+    # Logic to convert App XML to simplified JSON can be triggered here 
+    # or the raw XML can be returned for AnalysisService to process.
+    # To keep it simple and consistent with Web, we return the path to the XML.
+    ${path}=    Capture App UI XML    ${filename}.xml
+    RETURN    ${path}
+
 Quit Application Session
     Close Application

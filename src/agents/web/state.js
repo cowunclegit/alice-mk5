@@ -1,38 +1,48 @@
 import { Annotation } from "@langchain/langgraph";
 
+const reduceCompletedSteps = (current, update) => current.concat(update);
+
 export const AgentState = Annotation.Root({
   input: Annotation(),
-  plan: Annotation(),
-  currentStep: Annotation(),
-  completedSteps: Annotation({
-    reducer: (x, y) => x.concat(y),
-    default: () => [],
-  }),
-  remainingSteps: Annotation(),
-  currentHTML: Annotation(),
-  candidates: Annotation(),
-  context: Annotation({
-    reducer: (x, y) => ({ ...x, ...y }),
-    default: () => ({}),
-  }),
-  retryCount: Annotation(),
-  status: Annotation(),
-  reasoning: Annotation(),
+  intent: Annotation(),
+  taskId: Annotation(),
   sessionId: Annotation(),
-  selectedResources: Annotation({
-    reducer: (x, y) => Array.from(new Set([...x, ...y])),
-    default: () => ["web/core.resource"],
-  }),
   dataStore: Annotation({
     reducer: (x, y) => ({ ...x, ...y }),
     default: () => ({}),
   }),
-  taskId: Annotation(),
-  activeToolId: Annotation(),
-  isSubAgent: Annotation(),
-  // Field to track all files extracted in the current session
-  extractedFiles: Annotation({
-    reducer: (x, y) => x.concat(y),
+  remainingSteps: Annotation({
+    reducer: (x, y) => y ?? x,
     default: () => [],
+  }),
+  completedSteps: Annotation({
+    reducer: reduceCompletedSteps,
+    default: () => [],
+  }),
+  currentStep: Annotation({
+    reducer: (x, y) => y ?? x,
+    default: () => null,
+  }),
+  currentHTML: Annotation({
+    reducer: (x, y) => y ?? x,
+    default: () => null,
+  }),
+  retryCount: Annotation({
+    reducer: (x, y) => y ?? x,
+    default: () => 0,
+  }),
+  selectedResources: Annotation({
+    reducer: (x, y) => y ?? x,
+    default: () => [],
+  }),
+  status: Annotation({
+    reducer: (x, y) => y ?? x,
+    default: () => 'idle',
+  }),
+  isSubAgent: Annotation(),
+  originalInput: Annotation(),
+  context: Annotation({
+    reducer: (x, y) => ({ ...x, ...y }),
+    default: () => ({}),
   }),
 });

@@ -79,6 +79,16 @@ Capture DOM Source
     Log To Console    SAVED_FILE_PATH: ${path}
     RETURN    ${path}
 
+Capture Accessibility Tree
+    [Arguments]    ${filename}=axtree.json
+    ${script}=    Set Variable    return (() => { const walk = (el) => { const role = el.getAttribute('role') || el.tagName.toLowerCase(); const name = el.innerText || el.getAttribute('aria-label') || el.placeholder || el.title || ''; if (!el.offsetParent && el.tagName !== 'BODY') return null; const node = { tag: el.tagName.toLowerCase(), role, name: name.trim().substring(0, 200), id: el.id, class: el.className }; const children = Array.from(el.children).map(walk).filter(c => c !== null); if (children.length > 0) node.children = children; return node; }; return walk(document.body); })();
+    ${tree}=    Execute Javascript    ${script}
+    ${json_string}=    Evaluate    json.dumps($tree, ensure_ascii=False, indent=2)    json
+    ${path}=    Set Variable    ${OUTPUT DIR}${/}${filename}
+    Create File    ${path}    ${json_string}
+    Log To Console    SAVED_FILE_PATH: ${path}
+    RETURN    ${path}
+
 Extract Element Data
     [Arguments]    ${selector}    ${filename}=result.txt
     # Try standard way first with shorter timeout

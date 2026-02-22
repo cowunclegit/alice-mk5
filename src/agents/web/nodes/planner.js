@@ -6,7 +6,7 @@ export const planner = async (state, config) => {
   const logger = config.configurable.logger;
   const model = config.configurable.model;
 
-  await logger.info('Planner: Creating plan using selected resources.');
+  await logger.info(`Planner: Creating plan for input: "${state.input}"`);
 
   const resourceDir = path.join(process.cwd(), 'src/robots/resources');
   let keywordsInfo = "";
@@ -25,6 +25,9 @@ Decompose the user's request into a STRICT sequence of robot actions.
 ### AVAILABLE ROBOT RESOURCES:
 ${keywordsInfo}
 
+### PREVIOUSLY COLLECTED DATA (dataStore):
+${JSON.stringify(state.dataStore || {}, null, 2)}
+
 ### CRITICAL LOGIC RULES:
 1. **TWO-STEP RULE**: If the user wants information, you MUST use at least two steps:
    - Step 1: Navigate/Search to get to the page (e.g., 'Navigate To URL' or 'Search Naver').
@@ -32,7 +35,9 @@ ${keywordsInfo}
 2. **NEVER STOP AT SEARCH**: A 'Search' step alone is NEVER enough to satisfy an information request.
 3. **DYNAMIC SELECTORS**: For extraction steps, always set the first argument (selector) to "" (empty string). The Analyzer will find it.
 4. **NO HALLUCINATED URLS**: NEVER use placeholder URLs like 'example.com'. Only navigate to URLs found in 'AVAILABLE ROBOT RESOURCES' or those extracted into the dataStore from previous steps.
-5. **DATA FLOW**: To use data from a previous task, reference the key in the dataStore.
+5. **DATA FLOW**: To use data from a previous task, reference the key in the dataStore using the format '{{key.path}}'. For example, '{{result.data.0.link}}'.
+6. **STRICT LITERALS**: DO NOT substitute or change literal values (search terms, names, dates) provided in the user request. Use them EXACTLY as given.
+7. **CONTEXTUAL CONSISTENCY**: Maintain consistency with the overall mission and the current page state. Do not navigate to a new platform if the required information is likely available on the current one.
 
 Respond ONLY with a JSON object:
 {
@@ -43,12 +48,17 @@ Respond ONLY with a JSON object:
 }
 `;
 
+  const userContent = `Overall Mission: ${state.originalInput || 'Not specified'}
+Current Task: ${state.input}`;
+
   const response = await model.invoke([
     { role: 'system', content: systemPrompt },
-    { role: 'user', content: state.input }
+    { role: 'user', content: userContent }
   ]);
 
   const parsed = extractAndParseJSON(response.content);
+  
+  await logger.info(`Planner: Established plan:\n${JSON.stringify(parsed.plan, null, 2)}`);
   
   return {
     plan: parsed.plan,

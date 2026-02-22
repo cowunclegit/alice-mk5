@@ -4,7 +4,7 @@ import path from 'path';
 import { BrowserService } from './browser_service.js';
 
 export class RobotBridge {
-  static async runSequence(actions, stepLabel = '1', sessionId = 'unknown', selectedResources = ['core.resource'], logger = null) {
+  static async runSequence(actions, stepLabel = '1', sessionId = 'unknown', selectedResources = ['core.resource'], logger = null, dataStore = {}) {
     const sessionDir = path.join(process.cwd(), 'tmp_robot', `session-${sessionId}`);
     await fs.mkdir(sessionDir, { recursive: true });
 
@@ -48,7 +48,30 @@ export class RobotBridge {
       }
 
       const safeArgs = Array.isArray(args) ? args.filter(a => a !== null && a !== undefined && a !== '') : [];
-      const escapedArgs = safeArgs.map(arg => {
+      
+      // Resolve dataStore references in args
+      const resolvedArgs = safeArgs.map(arg => {
+        if (typeof arg === 'string' && (arg.includes('dataStore') || (arg.startsWith('{{') && arg.endsWith('}}')))) {
+          try {
+            // Support both dataStore['key'] and {{key}} formats
+            let path = arg.replace('dataStore', '').replace(/\[['"]/g, '.').replace(/['"]\]/g, '').replace(/^\./, '');
+            if (arg.startsWith('{{')) path = arg.substring(2, arg.length - 2);
+            
+            const parts = path.split('.');
+            let val = dataStore;
+            for (const part of parts) {
+              if (val === undefined || val === null) break;
+              val = val[part];
+            }
+            if (val !== undefined && val !== null) return val;
+          } catch (e) {
+            if (logger) logger.warn(`RobotBridge: Failed to resolve arg "${arg}": ${e.message}`);
+          }
+        }
+        return arg;
+      });
+
+      const escapedArgs = resolvedArgs.map(arg => {
         if (typeof arg === 'string' && arg.startsWith('#')) return `\\${arg}`;
         return arg;
       });
@@ -125,7 +148,7 @@ DEBUG_PORT = ${debugPort}
     });
   }
 
-  static async runKeyword(keyword, args = [], sessionId = 'unknown', selectedResources = ['core.resource'], logger = null, stepLabel = '1') {
-    return this.runSequence([{ keyword, args }], stepLabel, sessionId, selectedResources, logger);
+  static async runKeyword(keyword, args = [], sessionId = 'unknown', selectedResources = ['core.resource'], logger = null, stepLabel = '1', dataStore = {}) {
+    return this.runSequence([{ keyword, args }], stepLabel, sessionId, selectedResources, logger, dataStore);
   }
 }

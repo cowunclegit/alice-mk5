@@ -5,64 +5,35 @@ export const validator = async (state, config) => {
   const model = config.configurable.model;
   const lastResult = state.context.lastResult;
 
-  await logger.debug(`Validator: Evaluating last step outcome.`);
-
-  // Robust check for currentStep
-  if (!state.currentStep || typeof state.currentStep !== 'object') {
-    await logger.debug('Validator: No currentStep to validate. Finishing.');
-    return { status: 'finished' };
+  if (lastResult.status === 'fail') {
+    await logger.warn(`Validator: Step failed semantically or technically. ${lastResult.error || ''}`);
+    
+    return { 
+      completedSteps: { action: state.currentStep, status: 'fail', result: lastResult },
+      retryCount: (state.retryCount || 0) + 1,
+      status: 'failed'
+    };
   }
 
-  const intent = state.currentStep.intent || 'Unknown Intent';
+  // LLM-based semantic validation
+  await logger.info('Validator: Performing semantic validation with LLM.');
+  const systemPrompt = `You are a Web Action Validator.
+Did the action successfully achieve its intent based on the execution logs?
 
-  const systemPrompt = `You are a web automation validator.
-Given the original user intent, the action performed, and the execution result, determine if the goal was met.
+Action Intent: ${state.currentStep.intent}
+Robot Execution Result: ${JSON.stringify(lastResult)}
 
-### CRITICAL RULES:
-- If the action was "Press Enter" or "Click" to submit a search, verify that the browser actually navigated or the state changed.
-- If navigation failed or was skipped, the intent is NOT fulfilled.
-- If the result text is empty but the user wanted data, the intent is NOT fulfilled.
+Respond ONLY with a JSON object: { "success": true/false, "reasoning": "Detailed explanation of why it succeeded or failed." }`;
 
-Respond ONLY with a JSON object in the format:
-{
-  "success": true/false,
-  "reasoning": "Brief explanation"
-}
-`;
-
-  const userPrompt = `Original Intent: ${state.input}
-Step Intent: ${intent}
-Execution Result: ${JSON.stringify(lastResult)}
-`;
-
-  let parsed = { success: false, reasoning: "Validation failed to run or parse." };
-  try {
-    const response = await model.invoke([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
-    ]);
-    parsed = extractAndParseJSON(response.content);
-  } catch (e) {
-    await logger.error(`Validator: LLM call failed: ${e.message}`);
-    parsed.reasoning = `LLM Error: ${e.message}`;
-  }
+  const response = await model.invoke([{ role: 'system', content: systemPrompt }]);
+  const parsed = extractAndParseJSON(response.content);
   
-  if (parsed.success) {
-    await logger.info(`Validator: Intent fulfilled.`);
-  } else {
-    await logger.info(`Validator: Intent NOT fulfilled. Reason: ${parsed.reasoning}`);
-  }
-
-  const stepResult = {
-    action: state.currentStep,
-    result: lastResult,
-    status: parsed.success ? 'pass' : 'fail',
-    reasoning: parsed.reasoning
-  };
+  await logger.info(`Validator: Semantic check result: ${parsed.success ? 'PASS' : 'FAIL'} - ${parsed.reasoning}`);
 
   return {
-    completedSteps: [stepResult],
-    currentStep: null,
-    status: 'validating'
+    completedSteps: { action: state.currentStep, status: parsed.success ? 'pass' : 'fail', result: lastResult },
+    currentStep: null, // Clear for next step
+    currentHTML: null, // Clear cache
+    status: parsed.success ? 'passed' : 'failed'
   };
 };

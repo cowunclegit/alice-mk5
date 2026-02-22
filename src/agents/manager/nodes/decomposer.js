@@ -1,43 +1,52 @@
 import { extractAndParseJSON } from '../../../lib/json_utils.js';
 
-/**
- * Decomposer node to split automation intent into a sequence of agent tasks.
- * No longer uses specialized tools as per the new resource management model.
- */
 export const decomposer = async (state, config) => {
   const logger = config.configurable.logger;
   const model = config.configurable.model;
 
-  await logger.info('Manager: Planning automation tasks...');
+  // Determine if this is a replan
+  const isReplanning = state.status === 'replanning';
+  const replanCount = state.replanCount || 0;
 
-  const systemPrompt = `You are a strategic orchestrator for a multi-agent system. 
-Decompose the user's request into high-level tasks that can be fulfilled by the following AGENT TOOLS.
+  if (isReplanning && replanCount > 5) {
+    return {
+      status: 'error',
+      reasoning: 'Maximum replan attempts (5) exceeded. Aborting mission.'
+    };
+  }
 
-### AVAILABLE AGENT TOOLS:
-1. web_agent: For any website interactions, searching, scraping, and navigation.
-2. filesystem_agent: For reading/writing local files and managing data persistence.
-3. application_agent: For any local desktop software interactions (Notepad, Calculator, etc).
+  await logger.info(isReplanning 
+    ? `Manager: Re-planning mission (Attempt ${replanCount + 1})...` 
+    : 'Manager: Analyzing intent and creating execution plan...');
+
+  const systemPrompt = `You are a strategic Web Automation Architect.
+Your goal is to create a sequential execution plan to fulfill the user's request.
+
+### CAPABILITIES:
+1. **Web Agent**: Can navigate, search, extract data, and click elements using visual analysis (AXTree).
+2. **Filesystem Agent**: Can read/write files.
+3. **Application Agent**: Can control desktop apps (optional).
+
+### REPLANNING CONTEXT:
+${isReplanning ? `Previous plan failed. History: ${JSON.stringify(state.history.slice(-3))}` : "Initial planning phase."}
 
 ### RULES:
-1. Break complex requests into sequential steps.
-2. Assign each step to the correct AGENT TOOL.
-   - Use 'web' for 'web_agent'
-   - Use 'filesystem' for 'filesystem_agent': Managing file persistence and extracting specific variables for the shared 'dataStore'.
-   - Use 'application' for 'application_agent': Interacting with local GUI software.
-3. DATA DEPENDENCY: 
-   - Ensure data required for a step is explicitly extracted or prepared by a preceding step.
-   - Reference keys in the 'dataStore' explicitly in the intent.
-4. Respond ONLY with a JSON object:
+1. **Direct Answer**: If the request is simple (e.g. "Hi", "Summary of X"), answer directly without tools.
+2. **Sequential Steps**: Break complex tasks into logical, sequential steps.
+3. **Tool Usage**: Assign 'web_agent' for any internet task.
+4. **Outcome**: Ensure the last step gathers the final answer.
+
+Respond ONLY with a JSON object:
 {
   "tasks": [
     { 
       "id": "T1", 
-      "platform": "web | filesystem | application", 
-      "tool": "web_agent | filesystem_agent | application_agent",
-      "intent": "Objective for the tool. Reference dataStore keys if necessary." 
+      "tool": "web_agent | filesystem_agent | application_agent", 
+      "intent": "Clear natural language description of what this agent should do." 
     }
   ],
-  "reasoning": "Orchestration strategy"
+  "direct_answer": "Optional string if no tools are needed",
+  "reasoning": "Why this plan is efficient"
 }
 `;
 
@@ -47,10 +56,20 @@ Decompose the user's request into high-level tasks that can be fulfilled by the 
   ]);
 
   const parsed = extractAndParseJSON(response.content);
-  
+
+  // Direct answer path (US1)
+  if (parsed.direct_answer) {
+    return {
+      status: 'finished',
+      final_response: parsed.direct_answer,
+      reasoning: parsed.reasoning
+    };
+  }
+
   return {
     tasks: parsed.tasks,
-    reasoning: parsed.reasoning,
-    status: 'planning'
+    status: 'planning',
+    replanCount: isReplanning ? replanCount + 1 : 0,
+    reasoning: parsed.reasoning
   };
 };

@@ -8,7 +8,7 @@ export const planner = async (state, config) => {
   const logger = config.configurable.logger;
   const model = config.configurable.model;
 
-  await logger.info('AppPlanner: Creating execution plan.');
+  await logger.info(`AppPlanner: Creating execution plan for intent: "${state.intent}"`);
 
   // Read Appium resources
   const resourceDir = path.join(process.cwd(), 'src/robots/resources/application');
@@ -54,6 +54,7 @@ ${JSON.stringify(state.dataStore || {})}
 3. Every step MUST include exact "keyword" and its "args" array.
 4. If you need to click/type, set "selector" to null (Analyzer will find it).
 5. If an available TOOL exactly matches the user request, you can use the "Run Tool" keyword with the tool name as the first argument.
+6. **STRICT LITERALS**: DO NOT substitute or change literal values provided in the user request. Use them EXACTLY as given.
 
 Respond ONLY with a JSON object:
 {
@@ -70,6 +71,8 @@ Respond ONLY with a JSON object:
   ]);
 
   const parsed = extractAndParseJSON(response.content);
+  
+  await logger.info(`AppPlanner: Established plan:\n${JSON.stringify(parsed.plan, null, 2)}`);
   
   const expandedPlan = [];
   for (const step of parsed.plan) {

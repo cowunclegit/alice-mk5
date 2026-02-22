@@ -1,74 +1,61 @@
 import { createAgentTools } from "../agent_tools.js";
 import { LineageTracker } from "../../common/lineage_tracker.js";
-import { VariableResolver } from "../../../lib/variable_resolver.js";
 
-/**
- * Executor node to dispatch tasks to sub-agents.
- * No longer supports specialized tools as they are replaced by resource management.
- */
 export const executor = async (state, config) => {
   const logger = config.configurable.logger;
-  const currentTask = state.tasks[state.currentTaskIndex];
-
-  if (!currentTask) {
+  
+  if (state.currentTaskIndex >= state.tasks.length) {
     return { status: 'finalizing' };
   }
 
-  // RESOLVE VARIABLES in intent before execution
-  const resolvedIntent = VariableResolver.resolve(currentTask.intent, state.dataStore);
+  const currentTask = state.tasks[state.currentTaskIndex];
+  await logger.info(`ManagerExecutor: Executing task ${currentTask.id} (${currentTask.tool}): "${currentTask.intent}"`);
 
-  await logger.info(`ManagerExecutor: Executing task ${currentTask.id} using "${currentTask.tool}" for: "${resolvedIntent}"`);
-
-  // 1. Load available agent tools
   const tools = createAgentTools(config);
   const targetTool = tools.find(t => t.name === currentTask.tool);
 
   if (!targetTool) {
-    await logger.error(`ManagerExecutor: Tool "${currentTask.tool}" not found.`);
-    return { status: 'error', reasoning: `Agent tool ${currentTask.tool} is missing.` };
+    return { 
+      status: 'error', 
+      reasoning: `Tool ${currentTask.tool} not found.` 
+    };
   }
 
   try {
-    const startTime = Date.now();
+    const result = await targetTool.execute(currentTask.intent, state.sessionId, state.dataStore, currentTask.id, state.input);
     
-    // 2. Execute the sub-agent tool with RESOLVED intent
-    const result = await targetTool.execute(resolvedIntent, state.sessionId, state.dataStore, currentTask.id);
-
-    const duration = (Date.now() - startTime) / 1000;
-    await logger.info(`ManagerExecutor: Tool "${currentTask.tool}" finished in ${duration.toFixed(2)}s with status: ${result.status}`);
-
-    // 3. Track Lineage (Both input intent and output data)
+    // Lineage and History
     let newLineage = LineageTracker.recordUpdate(state.lineage, { [currentTask.id + '_intent']: currentTask.intent }, currentTask.id, 'input');
     newLineage = LineageTracker.recordUpdate(newLineage, result.data, currentTask.id, 'output');
 
-    // 4. Update History
     const historyEntry = {
       taskId: currentTask.id,
       tool: currentTask.tool,
       intent: currentTask.intent,
-      status: result.status === 'finished' ? 'finished' : 'error',
+      status: result.status,
       data: result.data,
-      files: result.files,
-      robot_history: result.history || [],
       timestamp: new Date().toISOString()
     };
 
-    const isSuccess = result.status === 'finished';
-
-    return {
-      dataStore: result.data,
-      lineage: newLineage,
-      history: [historyEntry],
-      currentTaskIndex: isSuccess ? state.currentTaskIndex + 1 : state.currentTaskIndex,
-      status: isSuccess ? 'executing' : 'error',
-      reasoning: isSuccess ? '' : `Sub-agent ${currentTask.tool} failed.`
-    };
+    if (result.status === 'finished') {
+      return {
+        dataStore: result.data,
+        lineage: newLineage,
+        history: [historyEntry],
+        currentTaskIndex: state.currentTaskIndex + 1,
+        status: 'executing' // Continue to next task or finalize
+      };
+    } else {
+      // Task Failed -> Trigger Replanning
+      await logger.warn(`ManagerExecutor: Task ${currentTask.id} failed. Initiating replan.`);
+      return {
+        history: [historyEntry],
+        status: 'replanning',
+        reasoning: `Task ${currentTask.id} failed: ${result.reasoning || 'Unknown error'}`
+      };
+    }
 
   } catch (e) {
-    await logger.error(`ManagerExecutor: Fatal error during tool execution: ${e.message}`);
-    return {
-      status: 'error',
-      reasoning: e.message
-    };
+    return { status: 'error', reasoning: e.message };
   }
 };

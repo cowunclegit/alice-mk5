@@ -6,7 +6,7 @@ export const resourceSelector = async (state, config) => {
   
   // Use both the current intent AND the original input to find resources
   // This ensures that if the manager splits a task, we still know the overall context (e.g. "Naver")
-  const contextText = `${state.input} ${state.originalInput || ''}`.toLowerCase();
+  const contextText = `${state.input} ${state.originalInput || ''} ${state.intent || ''}`.toLowerCase();
   
   const manifestPath = path.join(process.cwd(), 'src/robots/resources/manifests.json');
   

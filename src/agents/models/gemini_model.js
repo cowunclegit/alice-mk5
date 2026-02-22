@@ -13,18 +13,46 @@ export class GeminiChatModel extends BaseChatModel {
   }
 
   async _generate(messages, options, runManager) {
-    const prompt = messages.map(m => m.content).join('\n');
+    // LangChain messages can be objects or strings
+    const extractContent = (m) => {
+      if (typeof m === 'string') return m;
+      return m.content || m.text || (m.lc_kwargs && m.lc_kwargs.content) || '';
+    };
+
+    const getRole = (m) => {
+      const type = m._getType ? m._getType() : (m.role || 'user');
+      if (type === 'system') return 'system';
+      if (type === 'assistant' || type === 'model' || type === 'ai') return 'model';
+      return 'user';
+    };
+
+    const systemMessage = messages.find(m => getRole(m) === 'system');
+    const userMessages = messages.filter(m => getRole(m) !== 'system');
+    
+    const contents = userMessages.map(m => ({
+      role: getRole(m),
+      parts: [{ text: extractContent(m) }]
+    }));
+
+    // Gemini requires at least one content part for the main body
+    if (contents.length === 0) {
+      contents.push({ role: 'user', parts: [{ text: '...' }] });
+    }
+
+    const body = { contents };
+
+    if (systemMessage) {
+      body.system_instruction = {
+        parts: [{ text: extractContent(systemMessage) }]
+      };
+    }
     
     const response = await fetch(this.apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }]
-      })
+      body: JSON.stringify(body)
     });
 
     if (!response.ok) {
@@ -33,6 +61,11 @@ export class GeminiChatModel extends BaseChatModel {
     }
 
     const data = await response.json();
+    
+    if (!data.candidates || data.candidates.length === 0) {
+      throw new Error(`Gemini API returned no candidates: ${JSON.stringify(data)}`);
+    }
+
     const text = data.candidates[0].content.parts[0].text;
 
     return {

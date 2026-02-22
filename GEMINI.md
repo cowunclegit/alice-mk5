@@ -31,9 +31,8 @@ npm test && npm run lint
 Node.js (Latest LTS), JavaScript (ESM): Follow standard conventions
 
 ## Recent Changes
+- 006-simplify-agent-flow: Added Node.js (Latest LTS), JavaScript (ESM) + LangGraph.js, Robot Framework
 - 005-manage-robot-resources: Added Node.js (Latest LTS), JavaScript (ESM) + LangGraph.js, Robot Framework
-- 004-tool-repro-optimization: Added Node.js (Latest LTS), JavaScript (ESM) + LangGraph.js, Robot Framework
-- 003-multi-agent-orchestration: Added `filesystem_agent` for data flow management and generalized orchestration prompts for better data dependency handling (2026-02-20).
 
 
 <!-- MANUAL ADDITIONS START -->

@@ -13,13 +13,11 @@ import { analyzer } from "./nodes/analyzer.js";
 const shouldContinue = (state) => {
   const lastStep = state.completedSteps[state.completedSteps.length - 1];
   
-  // 1. 만약 마지막 단계가 실패했다면 복구(Reviser) 시도
   if (lastStep && lastStep.status === 'fail') {
-    if (state.retryCount < 5) return "reviser";
+    if (state.retryCount < 3) return "reviser";
     return state.isSubAgent ? "result_collector" : "finalizer";
   }
 
-  // 2. 남은 단계가 있다면 다음 단계 준비를 위해 initialize_step으로 이동 (루프)
   if (state.remainingSteps && state.remainingSteps.length > 0) {
     return "initialize_step";
   }
@@ -41,30 +39,36 @@ const initializeStep = (state) => {
 };
 
 const workflow = new StateGraph(AgentState)
-  // Nodes
   .addNode("resource_selector", resourceSelector)
   .addNode("planner", planner)
   .addNode("initialize_step", initializeStep)
   .addNode("capture_dom", captureDom)
-  .addNode("executor", executor)
-  .addNode("result_collector", resultCollector)
   .addNode("analyzer", analyzer)
+  .addNode("executor", executor)
   .addNode("validator", validator)
+  .addNode("result_collector", resultCollector)
   .addNode("finalizer", finalizer)
   .addNode("reviser", reviser)
   
-  // Direct entry to resource selection and planning
+  // Start
   .addEdge(START, "resource_selector")
-
-  // Path B: 반응형 탐색 및 실행 루프 (Reactive Planning Loop)
+  
+  // Planning
   .addEdge("resource_selector", "planner")
   .addEdge("planner", "initialize_step")
-  .addEdge("initialize_step", "capture_dom") // 1. 눈을 뜬다 (현재 화면 캡처)
-  .addEdge("capture_dom", "analyzer")       // 2. 화면을 분석한다 (최적의 셀렉터/방법 결정)
-  .addEdge("analyzer", "executor")          // 3. 행동한다 (실제 실행)
-  .addEdge("executor", "validator")         // 4. 결과가 맞는지 확인한다
-  .addConditionalEdges("validator", shouldContinue) // 5. 성공했으면 다음 할 일을 위해 다시 루프
+  
+  // Execution Loop
+  .addEdge("initialize_step", "capture_dom")
+  .addEdge("capture_dom", "analyzer")
+  .addEdge("analyzer", "executor")
+  .addEdge("executor", "validator")
+  
+  // Decisions
+  .addConditionalEdges("validator", shouldContinue)
+  
+  // Retry / End
   .addEdge("reviser", "initialize_step")
+  .addEdge("result_collector", END)
   .addEdge("finalizer", END);
 
 export const graph = workflow.compile();

@@ -115,7 +115,7 @@ export class BrowserService {
 
     // Wait for browser to be READY
     let attempts = 0;
-    while (attempts < 10) {
+    while (attempts < 30) { // 30 * 500ms = 15s
       if (await this.isPortOpen(debugPort)) {
         return debugPort;
       }
@@ -123,7 +123,7 @@ export class BrowserService {
       attempts++;
     }
     
-    throw new Error(`Failed to start browser on port ${debugPort} after 5 seconds.`);
+    throw new Error(`Failed to start browser on port ${debugPort} after 15 seconds. Please check if Google Chrome is already running with a conflicting profile.`);
   }
 
   static async stopBrowser(sessionId) {

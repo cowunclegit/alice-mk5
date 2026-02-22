@@ -4,37 +4,16 @@ export const executor = async (state, config) => {
   const logger = config.configurable.logger;
   
   if (!state.currentStep) {
-    await logger.error('Executor: No currentStep found in state. Aborting.');
-    return {
-      status: 'error',
-      context: { ...state.context, lastResult: { status: 'fail', stderr: 'No action to execute.' } }
-    };
+    return { status: 'validating' };
   }
 
   const { keyword, args } = state.currentStep;
-  
-  await logger.info(`Executor: Running step "${keyword}".`);
-  
-  // Only run the CURRENT step
-  const action = {
-    keyword: state.currentStep.keyword,
-    args: state.currentStep.args || []
-  };
+  await logger.info(`WebExecutor: Running "${keyword}" with args: ${JSON.stringify(args)}`);
 
-  const stepNumber = state.completedSteps.length + 1;
-  const stepLabel = state.taskId ? `${state.taskId}-${stepNumber}` : stepNumber;
-  const result = await RobotBridge.runKeyword(action.keyword, action.args, state.sessionId, state.selectedResources, logger, stepLabel);
-  
-  if (result.status === 'pass') {
-    await logger.info(`Executor: Success.`);
-  } else {
-    await logger.error(`Executor: Failed.`);
-    await logger.debug(`Robot Stdout: ${result.stdout}`);
-    await logger.debug(`Robot Stderr: ${result.stderr}`);
-  }
+  const result = await RobotBridge.runKeyword(keyword, args, state.sessionId, state.selectedResources, logger, '1', state.dataStore);
 
   return {
     status: 'executing',
-    context: { ...state.context, lastResult: result }
+    context: { lastResult: result }
   };
 };
