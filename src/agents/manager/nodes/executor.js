@@ -1,5 +1,6 @@
 import { createAgentTools } from "../agent_tools.js";
 import { LineageTracker } from "../../common/lineage_tracker.js";
+import { VariableResolver } from "../../../lib/variable_resolver.js";
 
 /**
  * Executor node to dispatch tasks to sub-agents.
@@ -13,7 +14,10 @@ export const executor = async (state, config) => {
     return { status: 'finalizing' };
   }
 
-  await logger.info(`ManagerExecutor: Executing task ${currentTask.id} using "${currentTask.tool}" for: "${currentTask.intent}"`);
+  // RESOLVE VARIABLES in intent before execution
+  const resolvedIntent = VariableResolver.resolve(currentTask.intent, state.dataStore);
+
+  await logger.info(`ManagerExecutor: Executing task ${currentTask.id} using "${currentTask.tool}" for: "${resolvedIntent}"`);
 
   // 1. Load available agent tools
   const tools = createAgentTools(config);
@@ -27,9 +31,8 @@ export const executor = async (state, config) => {
   try {
     const startTime = Date.now();
     
-    // 2. Execute the sub-agent tool
-    // We pass the intent, taskId, sessionId, and current dataStore for context
-    const result = await targetTool.execute(currentTask.intent, state.sessionId, state.dataStore, currentTask.id);
+    // 2. Execute the sub-agent tool with RESOLVED intent
+    const result = await targetTool.execute(resolvedIntent, state.sessionId, state.dataStore, currentTask.id);
 
     const duration = (Date.now() - startTime) / 1000;
     await logger.info(`ManagerExecutor: Tool "${currentTask.tool}" finished in ${duration.toFixed(2)}s with status: ${result.status}`);

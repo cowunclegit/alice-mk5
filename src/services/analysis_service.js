@@ -15,6 +15,18 @@ export class AnalysisService {
     const candidates = [];
     let refCounter = 0;
 
+    // First pass: identify potential list patterns by counting elements with same class/tag combinations
+    const patterns = new Map();
+    $('*').each((i, el) => {
+      const $el = $(el);
+      const tag = el.name;
+      const classes = $el.attr('class') || '';
+      if (classes) {
+        const key = `${tag}.${classes.split(/\s+/).filter(c => c).join('.')}`;
+        patterns.set(key, (patterns.get(key) || 0) + 1);
+      }
+    });
+
     const walk = (el, depth = 0) => {
       const $el = $(el);
       const role = this._getRole(el);
@@ -27,6 +39,10 @@ export class AnalysisService {
 
       const refId = `e${++refCounter}`;
       const selector = this.getSelector($, $el);
+      const tag = el.name;
+      const classes = $el.attr('class') || '';
+      const patternKey = classes ? `${tag}.${classes.split(/\s+/).filter(c => c).join('.')}` : null;
+      const isPartOfPattern = patternKey && patterns.get(patternKey) > 3;
 
       let score = 0;
       const combinedText = `${name} ${selector} ${role}`.toLowerCase();
@@ -34,12 +50,15 @@ export class AnalysisService {
       if (name.match(/[°℃℉%]/)) score += 20;
       if (combinedText.match(/날씨|기온|온도|풍속|습도|뉴스|제목|링크|검색|확인|로그인/)) score += 15;
       if (['button', 'link', 'textbox', 'checkbox'].includes(role)) score += 10;
+      if (isPartOfPattern) score += 5;
 
       candidates.push({
         refId,
         role,
         text: name,
         selector,
+        isListPattern: isPartOfPattern,
+        patternCount: isPartOfPattern ? patterns.get(patternKey) : 0,
         score,
         depth
       });
@@ -54,7 +73,11 @@ export class AnalysisService {
   static getAccessibilityTree(candidates) {
     return candidates
       .sort((a, b) => a.refId.slice(1) - b.refId.slice(1)) 
-      .map(c => `${'  '.repeat(Math.min(c.depth, 10))}- ${c.role} "${c.text}" [ref=${c.refId}]`)
+      .map(c => {
+        let line = `${'  '.repeat(Math.min(c.depth, 10))}- ${c.role} "${c.text}" [ref=${c.refId}]`;
+        if (c.isListPattern) line += ` [list_pattern, count=${c.patternCount}]`;
+        return line;
+      })
       .join('\n');
   }
 

@@ -5,9 +5,6 @@ import { executor } from "./nodes/executor.js";
 import { validator } from "./nodes/validator.js";
 import { finalizer } from "./nodes/finalizer.js";
 import { reviser } from "./nodes/reviser.js";
-import { router } from "./nodes/router.js";
-import { toolLoader } from "./nodes/tool_loader.js";
-import { simpleExecutor } from "./nodes/simple_executor.js";
 import { resourceSelector } from "./nodes/resource_selector.js";
 import { resultCollector } from "./nodes/result_collector.js";
 import { captureDom } from "./nodes/capture_dom.js";
@@ -44,28 +41,20 @@ const initializeStep = (state) => {
 };
 
 const workflow = new StateGraph(AgentState)
+  // Nodes
   .addNode("resource_selector", resourceSelector)
   .addNode("planner", planner)
-  .addNode("tool_loader", toolLoader)
   .addNode("initialize_step", initializeStep)
   .addNode("capture_dom", captureDom)
   .addNode("executor", executor)
-  .addNode("simple_executor", simpleExecutor)
   .addNode("result_collector", resultCollector)
   .addNode("analyzer", analyzer)
   .addNode("validator", validator)
   .addNode("finalizer", finalizer)
   .addNode("reviser", reviser)
   
-  .addConditionalEdges(START, router, {
-    "tool_execution": "tool_loader",
-    "tool_making": "resource_selector"
-  })
-
-  // Path A: Tool Execution (Completely non-interactive)
-  .addEdge("tool_loader", "simple_executor")
-  .addEdge("simple_executor", "result_collector")
-  .addEdge("result_collector", END)
+  // Direct entry to resource selection and planning
+  .addEdge(START, "resource_selector")
 
   // Path B: 반응형 탐색 및 실행 루프 (Reactive Planning Loop)
   .addEdge("resource_selector", "planner")

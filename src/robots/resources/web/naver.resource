@@ -9,11 +9,12 @@ Search Naver
     Press Enter    id:query
 
 Click Naver News Tab
+    [Arguments]    ${optional_selector}=${EMPTY}
     [Documentation]    Clicks the "News" tab on the Naver search results page.
-    # Selenium does not support :has-text, using XPath instead
-    ${selector}=    Set Variable    xpath://a[@role='tab' and contains(., '뉴스')]
-    Wait For Element    ${selector}
-    Click Element       ${selector}
+    ${default_selector}=    Set Variable    xpath://a[@role='tab' and contains(., '뉴스')]
+    ${final_selector}=    Set Variable IF    '${optional_selector}' != '${EMPTY}'    ${optional_selector}    ${default_selector}
+    Wait For Element    ${final_selector}
+    Click Element       ${final_selector}
 
 Extract Naver News Results
     [Arguments]    ${filename}=result.json

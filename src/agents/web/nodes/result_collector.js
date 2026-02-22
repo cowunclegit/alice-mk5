@@ -1,4 +1,5 @@
 import { StorageService } from '../../../services/storage_service.js';
+import { DataUtils } from '../../../lib/data_utils.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -63,7 +64,6 @@ export const resultCollector = async (state, config) => {
       // 4. Finalize and map to standardized dataStore entries
       for (const rf of resultFiles) {
         try {
-          // Prevent duplicate processing of the same file in the same run
           if (newlyFinalizedFiles.some(f => f.endsWith(rf.name))) continue;
 
           const finalPath = await StorageService.finalizeResult(rf.tempPath, rf.name, toolId);
@@ -81,6 +81,8 @@ export const resultCollector = async (state, config) => {
             step_intent: step.action.intent,
             timestamp: new Date().toISOString()
           };
+          // Also add a flat key for direct access
+          newDataStoreUpdates[`${key}_path`] = finalPath;
 
           if (ext === '.json') {
             const content = await fs.readFile(finalPath, 'utf8');
@@ -95,14 +97,16 @@ export const resultCollector = async (state, config) => {
 
   await logger.info(`ResultCollector: Successfully collected ${Object.keys(newDataStoreUpdates).length} result entries.`);
 
-  // Determine final status based on whether any steps were actually successful
+  // Determine final status
   const lastStep = state.completedSteps[state.completedSteps.length - 1];
-  const hasSuccessfulStep = state.completedSteps.some(s => s.status === 'pass');
   let finalStatus = 'finished';
-  
   if (state.completedSteps.length === 0 || (lastStep && lastStep.status === 'fail')) {
     finalStatus = 'error';
   }
+
+  // COMPACT DataStore
+  const mergedDataStore = { ...state.dataStore, ...newDataStoreUpdates };
+  const compactedDataStore = DataUtils.compact(mergedDataStore);
 
   if (!state.isSubAgent) {
     try {
@@ -114,6 +118,6 @@ export const resultCollector = async (state, config) => {
   return { 
     status: finalStatus,
     extractedFiles: newlyFinalizedFiles,
-    dataStore: newDataStoreUpdates
+    dataStore: compactedDataStore
   };
 };

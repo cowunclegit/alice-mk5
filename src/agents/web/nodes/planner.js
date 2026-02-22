@@ -1,7 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { extractAndParseJSON } from '../../../lib/json_utils.js';
-import { StorageService } from '../../../services/storage_service.js';
 
 export const planner = async (state, config) => {
   const logger = config.configurable.logger;
@@ -32,7 +31,8 @@ ${keywordsInfo}
    - Step 2: Extract the data (e.g., 'Extract Element Data' or 'Save List Data').
 2. **NEVER STOP AT SEARCH**: A 'Search' step alone is NEVER enough to satisfy an information request.
 3. **DYNAMIC SELECTORS**: For extraction steps, always set the first argument (selector) to "" (empty string). The Analyzer will find it.
-4. **EFFICIENCY**: If a specialized keyword (like 'Get Current Temperature') exists and is verified, use it as a single step.
+4. **NO HALLUCINATED URLS**: NEVER use placeholder URLs like 'example.com'. Only navigate to URLs found in 'AVAILABLE ROBOT RESOURCES' or those extracted into the dataStore from previous steps.
+5. **DATA FLOW**: To use data from a previous task, reference the key in the dataStore.
 
 Respond ONLY with a JSON object:
 {
