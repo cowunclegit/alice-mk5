@@ -1,31 +1,29 @@
 import { extractAndParseJSON } from '../../lib/json_utils.js';
 
+/**
+ * Router node to classify user intent at the entry point.
+ * Branches between 'automation' (standard tasks) and 'resource_management' (modifying robots).
+ */
 export const router = async (state, config) => {
   const logger = config.configurable.logger;
   const model = config.configurable.model;
 
-  // If tasks already exist, this is a routing decision, not decomposition
-  if (state.tasks && state.tasks.length > 0) {
-    return { status: 'routing' };
-  }
+  await logger.info('Manager: Routing user intent...');
 
-  await logger.info('Manager: Decomposing intent into platform-specific tasks.');
+  const systemPrompt = `You are a strategic router for a multi-agent automation system.
+Your job is to determine if the user wants to perform an automation task or manage the underlying Robot Framework resources (keywords, files).
 
-  const systemPrompt = `You are a task decomposer for a multi-platform automation agent.
-Analyze the user intent and split it into a sequence of tasks grouped by platform.
+### INTENT CATEGORIES:
+1. "automation": Standard requests to DO something (e.g., "Search Naver", "Open Notepad", "Extract news").
+2. "resource_management": Requests to ADD, MODIFY, or CREATE Robot Framework keywords or resource files (e.g., "Add a keyword to Naver resource", "Modify the login keyword", "Create a new resource file for Slack").
 
 ### RULES:
-- Use "web" for website interactions.
-- Use "application" for desktop app interactions.
-- CRITICAL: Group consecutive actions on the SAME platform into a single task.
-  - Example: "Search Naver, click news, and save titles" -> ONE "web" task.
-  - Example: "Search Naver, then copy to Notepad" -> TWO tasks: 1 "web", 2 "application".
+- If the user asks to "fix" or "update" a specific automation keyword, it is "resource_management".
+- If the user asks to "perform" or "run" a sequence, it is "automation".
 - Respond ONLY with a JSON object:
 {
-  "tasks": [
-    { "platform": "web | application", "intent": "Full task description for this platform" }
-  ],
-  "reasoning": "Why"
+  "category": "automation | resource_management",
+  "reasoning": "Brief explanation"
 }
 `;
 
@@ -36,10 +34,10 @@ Analyze the user intent and split it into a sequence of tasks grouped by platfor
 
   const parsed = extractAndParseJSON(response.content);
   
+  await logger.info(`Manager: Intent classified as "${parsed.category}"`);
+
   return {
-    tasks: parsed.tasks,
-    currentTaskIndex: 0,
-    status: 'routing',
+    status: parsed.category === 'resource_management' ? 'resource_management' : 'planning',
     reasoning: parsed.reasoning
   };
 };

@@ -26,6 +26,9 @@ export const captureDom = async (state, config) => {
 
     const historyActions = state.completedSteps.filter(s => s.status === 'pass').map(s => mapToAction(s.action));
     
+    // Wait for dynamic content to settle
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     const result = await RobotBridge.runSequence([
       ...historyActions,
       { keyword: 'Capture DOM Source', args: ['dom.html'] }

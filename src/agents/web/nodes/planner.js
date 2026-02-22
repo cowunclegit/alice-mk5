@@ -9,7 +9,6 @@ export const planner = async (state, config) => {
 
   await logger.info('Planner: Creating plan using selected resources.');
 
-  // Read only selected resources
   const resourceDir = path.join(process.cwd(), 'src/robots/resources');
   let keywordsInfo = "";
   const selectedFiles = state.selectedResources || ["web/core.resource"];
@@ -18,48 +17,29 @@ export const planner = async (state, config) => {
     try {
       const content = await fs.readFile(path.join(resourceDir, file), 'utf8');
       keywordsInfo += `\n--- Resource: ${file} ---\n${content}\n`;
-    } catch (e) {
-      await logger.error(`Planner: Failed to read resource ${file}: ${e.message}`);
-    }
+    } catch (e) {}
   }
 
-  // List available tools to the planner
-  let availableTools = [];
-  try {
-    const webToolsDir = path.join(StorageService.toolsDir, 'web');
-    const files = await fs.readdir(webToolsDir);
-    availableTools = files.filter(f => f.endsWith('.json')).map(f => f.replace('.json', ''));
-  } catch (e) {
-    // ignore
-  }
-
-  const systemPrompt = `You are a web automation planner. 
-Decompose the user's request into a sequence of robot actions.
+  const systemPrompt = `You are a high-level web automation architect. 
+Decompose the user's request into a STRICT sequence of robot actions.
 
 ### AVAILABLE ROBOT RESOURCES:
 ${keywordsInfo}
 
-### AVAILABLE TOOLS (PRE-VERIFIED SEQUENCES):
-${availableTools.join(', ') || 'None'}
-
-### AVAILABLE DATA (FROM PREVIOUS STEPS):
-${JSON.stringify(state.dataStore || {})}
-
-### CRITICAL RULES:
-1. Use ONLY the keywords defined in the resources above.
-2. Every step MUST include the exact "keyword" name and its "args" array.
-3. **STATE AWARENESS: If the current task is about "extracting" or "clicking" and you are likely already on the correct page from a previous task, DO NOT generate a "Search" or "Navigate" step again unless absolutely necessary.**
-4. DATA USAGE: If a required value (like a URL) exists in the AVAILABLE DATA, use that value directly in the "args". 
-   - **THOROUGH SCAN: Carefully scan the entire AVAILABLE DATA JSON for the required value. It might be nested inside other objects.**
-   - Example: To visit a specific target URL found in dataStore, use "Navigate To URL" with that exact URL.
-5. If an available TOOL matches the request, use "Run Tool" with the tool name as the first argument.
+### CRITICAL LOGIC RULES:
+1. **TWO-STEP RULE**: If the user wants information, you MUST use at least two steps:
+   - Step 1: Navigate/Search to get to the page (e.g., 'Navigate To URL' or 'Search Naver').
+   - Step 2: Extract the data (e.g., 'Extract Element Data' or 'Save List Data').
+2. **NEVER STOP AT SEARCH**: A 'Search' step alone is NEVER enough to satisfy an information request.
+3. **DYNAMIC SELECTORS**: For extraction steps, always set the first argument (selector) to "" (empty string). The Analyzer will find it.
+4. **EFFICIENCY**: If a specialized keyword (like 'Get Current Temperature') exists and is verified, use it as a single step.
 
 Respond ONLY with a JSON object:
 {
   "plan": [
-    { "intent": "Objective", "keyword": "Exact Keyword Name", "args": ["arg1"] }
+    { "intent": "Objective of this specific step", "keyword": "Keyword Name", "args": ["arg1", "arg2"] }
   ],
-  "reasoning": "Plan logic"
+  "reasoning": "Explain how Step 2 will extract the data after Step 1 reaches the page."
 }
 `;
 
@@ -70,22 +50,10 @@ Respond ONLY with a JSON object:
 
   const parsed = extractAndParseJSON(response.content);
   
-  const expandedPlan = [];
-  for (const step of parsed.plan) {
-    if (step.keyword === 'Run Tool') {
-      const toolId = step.args[0];
-      const sequence = await StorageService.loadSequence(toolId);
-      expandedPlan.push(...sequence.actions);
-    } else {
-      expandedPlan.push(step);
-    }
-  }
-
   return {
-    plan: expandedPlan,
-    remainingSteps: expandedPlan,
+    plan: parsed.plan,
+    remainingSteps: parsed.plan,
     completedSteps: [],
-    context: {},
     status: 'planning',
     reasoning: parsed.reasoning
   };

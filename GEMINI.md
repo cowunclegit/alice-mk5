@@ -11,6 +11,7 @@ Auto-generated from all feature plans. Last updated: 2026-02-18
 - Node.js (Latest LTS), JavaScript (ESM) + LangGraph.js, Robot Framework (SeleniumLibrary, AppiumLibrary) (003-multi-agent-orchestration)
 - Local File System (JSON for data_store and sequences), `config.yaml` for compaction thresholds (003-multi-agent-orchestration)
 - Local file system (JSON for tools/catalog, .robot/.resource for scripts) (004-tool-repro-optimization)
+- Local file system (.resource, JSON) (005-manage-robot-resources)
 
 - Node.js (Latest LTS), JavaScript (ESM) + LangGraph.js, Robot Framework (SeleniumLibrary), Jest (for TDD) (001-robot-automation-agent)
 
@@ -30,9 +31,9 @@ npm test && npm run lint
 Node.js (Latest LTS), JavaScript (ESM): Follow standard conventions
 
 ## Recent Changes
+- 005-manage-robot-resources: Added Node.js (Latest LTS), JavaScript (ESM) + LangGraph.js, Robot Framework
 - 004-tool-repro-optimization: Added Node.js (Latest LTS), JavaScript (ESM) + LangGraph.js, Robot Framework
 - 003-multi-agent-orchestration: Added `filesystem_agent` for data flow management and generalized orchestration prompts for better data dependency handling (2026-02-20).
-- 003-multi-agent-orchestration: Added Node.js (Latest LTS), JavaScript (ESM) + LangGraph.js, Robot Framework (SeleniumLibrary, AppiumLibrary)
 
 
 <!-- MANUAL ADDITIONS START -->

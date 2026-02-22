@@ -4,6 +4,12 @@ export const autoFix = async (state, config) => {
   const logger = config.configurable.logger;
   const model = config.configurable.model;
   const currentTask = state.tasks[state.currentTaskIndex];
+
+  if (!currentTask) {
+    await logger.error(`AutoFix: No task found at index ${state.currentTaskIndex}.`);
+    return { status: 'failed' };
+  }
+
   const retryCount = state.retryCounts[currentTask.id] || 0;
 
   if (retryCount >= 3) {

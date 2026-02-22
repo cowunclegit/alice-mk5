@@ -23,6 +23,8 @@ The work is ALREADY COMPLETE. Your task is to report the outcomes and answer any
 `;
 
   const userPrompt = `[User Original Intent]: "${state.input}"
+[Execution Status]: ${state.status}
+[Execution Reasoning]: ${state.reasoning || 'N/A'}
 [Unified Data Store]: ${JSON.stringify(state.dataStore)}
 `;
 

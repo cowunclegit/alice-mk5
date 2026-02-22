@@ -49,4 +49,5 @@ export const ManagerState = Annotation.Root({
     default: () => ({}),
   }),
   manifest: Annotation(),
+  resource_proposal: Annotation(),
 });

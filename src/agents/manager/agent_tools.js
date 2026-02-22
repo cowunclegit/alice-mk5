@@ -64,14 +64,3 @@ export const createAgentTools = (config) => {
     }
   ];
 };
-
-export const executeSpecializedTool = async (toolId, platform, variables, sessionId, config) => {
-  const { reproGraph } = await import('./graph.js');
-  const workflow = reproGraph();
-  return workflow.invoke({
-    toolId,
-    platform,
-    variables,
-    sessionId
-  }, config);
-};

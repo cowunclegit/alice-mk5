@@ -1,0 +1,37 @@
+openapi: 3.0.0
+info:
+  title: Alice MK5 Resource Management
+  version: 1.0.0
+paths:
+  /resources:
+    get:
+      summary: List all indexed resources and their keywords
+      responses:
+        '200':
+          description: A list of resource summaries
+  /resources/edit:
+    post:
+      summary: Propose a modification to a resource file
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [intent]
+              properties:
+                intent: { type: string }
+      responses:
+        '200':
+          description: A proposed edit with diff and reasoning
+  /resources/confirm:
+    post:
+      summary: Apply a previously proposed edit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [proposalId, approved]
+              properties:
+                proposalId: { type: string }
+                approved: { type: boolean }

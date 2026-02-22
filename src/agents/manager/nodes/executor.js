@@ -1,6 +1,10 @@
-import { createAgentTools, executeSpecializedTool } from "../agent_tools.js";
+import { createAgentTools } from "../agent_tools.js";
 import { LineageTracker } from "../../common/lineage_tracker.js";
 
+/**
+ * Executor node to dispatch tasks to sub-agents.
+ * No longer supports specialized tools as they are replaced by resource management.
+ */
 export const executor = async (state, config) => {
   const logger = config.configurable.logger;
   const currentTask = state.tasks[state.currentTaskIndex];
@@ -11,27 +15,7 @@ export const executor = async (state, config) => {
 
   await logger.info(`ManagerExecutor: Executing task ${currentTask.id} using "${currentTask.tool}" for: "${currentTask.intent}"`);
 
-  // 1. Check if it's a specialized tool
-  if (currentTask.tool === 'specialized_tool') {
-    try {
-      // Use toolId primarily, platform from task is a hint
-      const result = await executeSpecializedTool(currentTask.toolId, currentTask.platform, state.dataStore, state.sessionId, config);
-
-      if (result.status === 'finished') {
-        return {
-          dataStore: result.dataStore,
-          currentTaskIndex: state.currentTaskIndex + 1,
-          status: 'executing'
-        };
-      } else {
-        return { status: 'error', reasoning: result.reasoning || 'Specialized tool failed.' };
-      }
-    } catch (e) {
-      return { status: 'error', reasoning: `Fatal error in specialized tool: ${e.message}` };
-    }
-  }
-
-  // 2. Load available agent tools
+  // 1. Load available agent tools
   const tools = createAgentTools(config);
   const targetTool = tools.find(t => t.name === currentTask.tool);
 
@@ -66,13 +50,15 @@ export const executor = async (state, config) => {
       timestamp: new Date().toISOString()
     };
 
+    const isSuccess = result.status === 'finished';
+
     return {
       dataStore: result.data,
       lineage: newLineage,
       history: [historyEntry],
-      currentTaskIndex: state.currentTaskIndex + 1,
-      status: result.status === 'finished' ? 'executing' : 'error',
-      reasoning: result.status === 'finished' ? '' : `Sub-agent ${currentTask.tool} failed.`
+      currentTaskIndex: isSuccess ? state.currentTaskIndex + 1 : state.currentTaskIndex,
+      status: isSuccess ? 'executing' : 'error',
+      reasoning: isSuccess ? '' : `Sub-agent ${currentTask.tool} failed.`
     };
 
   } catch (e) {

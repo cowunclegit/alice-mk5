@@ -1,72 +1,98 @@
 import { AnalysisService } from '../../../services/analysis_service.js';
 import { extractAndParseJSON } from '../../../lib/json_utils.js';
 
+/**
+ * Analyzer node with OpenClaw-inspired AXTree analysis and Early Exit intelligence.
+ */
 export const analyzer = async (state, config) => {
   const logger = config.configurable.logger;
   const model = config.configurable.model;
   
+  if (!state.currentStep) {
+    await logger.debug('Analyzer: No current step. Skipping.');
+    return { status: 'analyzing' };
+  }
+
   const browserKeywords = ['Open Visible Browser', 'Navigate To URL', 'Capture DOM Source'];
-  if ((state.currentStep.selector && typeof state.currentStep.selector === 'string' && state.currentStep.selector.trim() !== '') || browserKeywords.includes(state.currentStep.keyword)) {
-    await logger.debug(`Analyzer: Skipping for keyword: ${state.currentStep.keyword} or existing selector: ${state.currentStep.selector}`);
+  if (state.currentStep.selector && typeof state.currentStep.selector === 'string' && state.currentStep.selector.trim() !== '') {
+    return { status: 'analyzing' };
+  }
+  if (browserKeywords.includes(state.currentStep.keyword)) {
     return { status: 'analyzing' };
   }
 
   if (!state.currentHTML || state.currentHTML.trim() === '') {
-    await logger.info('Analyzer: HTML is empty or invalid. Skipping analysis.');
-    return {
-      status: 'analyzing'
-    };
+    await logger.info('Analyzer: HTML is empty. Skipping analysis.');
+    return { status: 'analyzing' };
   }
 
-  await logger.info(`Analyzer: Finding selector for intent: "${state.currentStep.intent}"`);
+  await logger.info(`Analyzer: Analyzing page structure for intent: "${state.currentStep.intent}"`);
 
   const prunedHTML = AnalysisService.pruneDOM(state.currentHTML);
   const candidates = AnalysisService.extractInteractiveElements(prunedHTML);
+  const axTree = AnalysisService.getAccessibilityTree(candidates);
 
-  await logger.debug(`Analyzer: Extracted ${candidates.length} candidates.`);
+  const systemPrompt = `You are a Senior Web Analyst using Accessibility Trees (AXTree).
+Identify the best element [ref=eX] to satisfy the intent.
 
-  if (candidates.length === 0) {
-    await logger.info('Analyzer: No candidates found in HTML.');
-    return {
-      candidates: [],
-      status: 'clarifying' // Transition to clarifier if no elements found
-    };
-  }
+### ACCESSIBILITY TREE:
+${axTree}
 
-  const systemPrompt = `You are a web element analyzer. 
-Given a list of interactive elements and a user intent, find the most stable technical selector (id, data-testid, unique css) for the target element.
+### USER MISSION: "${state.input}"
+### CURRENT STEP INTENT: "${state.currentStep.intent}"
 
-### RULES:
-- Return ONLY a valid CSS selector string.
-- If you are not sure, pick the most likely candidate from the list.
-- DO NOT return "null", "None", or empty strings if interactive elements are available.
-- Respond ONLY with a JSON object:
+### STRATEGY:
+1. **MISSION COMPLETE?**: If the screen ALREADY shows the final data the user wants (e.g., the exact temperature is visible), you can suggest finishing early.
+2. **FIND ELEMENT**: Find the specific [ref=eX] that contains the target data or is the target button.
+
+### RESPONSE FORMAT (JSON):
 {
-  "selector": "the chosen selector",
-  "confidence": 0.0 to 1.0,
-  "reasoning": "Brief explanation"
+  "refId": "eX OR null",
+  "goal_satisfied": true/false,
+  "reasoning": "Explanation of choice or mission status",
+  "confidence": 0.0 to 1.0
 }
-`;
-
-  const userPrompt = `Intent: ${state.currentStep.intent}
-Candidates: ${JSON.stringify(candidates)}
 `;
 
   const response = await model.invoke([
     { role: 'system', content: systemPrompt },
-    { role: 'user', content: userPrompt }
+    { role: 'user', content: "Identify the best reference now." }
   ]);
 
   const parsed = extractAndParseJSON(response.content);
-  await logger.info(`Analyzer: Selected selector "${parsed.selector}" with confidence ${parsed.confidence}`);
-  await logger.debug(`Analyzer Reasoning: ${parsed.reasoning}`);
+
+  // Early Exit Logic
+  if (parsed.goal_satisfied === true) {
+    await logger.info('Analyzer: Mission goal satisfied based on visual analysis. Ending loop.');
+    return {
+      remainingSteps: [],
+      status: 'analyzing'
+    };
+  }
+
+  const chosenCandidate = candidates.find(c => c.refId === parsed.refId);
+  if (!chosenCandidate) {
+    await logger.error(`Analyzer: RefId ${parsed.refId} not found.`);
+    return { status: 'analyzing' };
+  }
+
+  await logger.info(`Analyzer: Selected [${parsed.refId}] "${chosenCandidate.text}" using selector "${chosenCandidate.selector}"`);
   
-  const updatedStep = { ...state.currentStep, selector: parsed.selector };
+  const updatedArgs = [...(state.currentStep.args || [])];
+  if (updatedArgs.length === 0 || !updatedArgs[0] || updatedArgs[0] === 'null' || updatedArgs[0] === '') {
+    updatedArgs[0] = chosenCandidate.selector;
+  }
+
+  const updatedStep = { 
+    ...state.currentStep, 
+    selector: chosenCandidate.selector, 
+    args: updatedArgs,
+    metadata: { ...parsed, text: chosenCandidate.text }
+  };
 
   return {
     currentStep: updatedStep,
     candidates: candidates,
-    status: 'analyzing',
-    reasoning: parsed.reasoning
+    status: 'analyzing'
   };
 };

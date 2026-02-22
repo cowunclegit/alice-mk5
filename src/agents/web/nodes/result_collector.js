@@ -40,7 +40,27 @@ export const resultCollector = async (state, config) => {
         } catch (e) {}
       }
 
-      // 3. Finalize and map to standardized dataStore entries
+      // 3. Collect direct result values from stdout
+      if (step.result.stdout) {
+        const valueMatches = step.result.stdout.matchAll(/RESULT_VALUE: (.*)/g);
+        for (const match of valueMatches) {
+          const val = match[1].trim();
+          const cleanIntent = (step.action.intent || 'result').toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 30);
+          const key = `text_${cleanIntent}`;
+          
+          await logger.debug(`ResultCollector: Capturing direct value for key: ${key}`);
+          newDataStoreUpdates[key] = {
+            type: 'text',
+            value: val,
+            step_intent: step.action.intent,
+            timestamp: new Date().toISOString()
+          };
+          // Also add a simplified top-level key for the summarizer
+          newDataStoreUpdates[`summary_${key}`] = val;
+        }
+      }
+
+      // 4. Finalize and map to standardized dataStore entries
       for (const rf of resultFiles) {
         try {
           // Prevent duplicate processing of the same file in the same run

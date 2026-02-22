@@ -56,9 +56,11 @@ Navigate To URL
 Wait For Element
     [Arguments]    ${selector}    ${timeout}=30s
     Wait Until Element Is Visible    ${selector}    timeout=${timeout}
+    Scroll Element Into View    ${selector}
 
 Click Element
     [Arguments]    ${selector}
+    Wait For Element    ${selector}
     SeleniumLibrary.Click Element    ${selector}
 
 Type Into Element
@@ -79,11 +81,29 @@ Capture DOM Source
 
 Extract Element Data
     [Arguments]    ${selector}    ${filename}=result.txt
-    ${texts}=    Get Text    ${selector}
-    ${path}=    Set Variable    ${OUTPUT DIR}${/}${filename}
-    Create File    ${path}    ${texts}
+    # Try standard way first with shorter timeout
+    ${status}    ${val}=    Run Keyword And Ignore Error    Wait Until Element Is Visible    ${selector}    timeout=5s
+    
+    ${texts}=    Set Variable    ${EMPTY}
+    IF    '${status}' == 'PASS'
+        ${texts}=    Get Text    ${selector}
+    ELSE
+        # Fallback: Use JavaScript
+        ${stripped_sel}=    Evaluate    $selector.replace('css:', '')
+        ${texts}=    Execute JavaScript    return document.querySelector("${stripped_sel}").innerText || document.querySelector("${stripped_sel}").textContent
+    END
+
+    # Normalize whitespace for better readability
+    ${clean_texts}=    Evaluate    " ".join($texts.split())    
+    
+    # Ensure safe filename
+    ${safe_filename}=    Evaluate    "".join([c if c.isalnum() else "_" for c in $filename])
+    ${path}=    Set Variable    ${OUTPUT DIR}${/}${safe_filename}
+    
+    Create File    ${path}    ${clean_texts}
+    Log To Console    RESULT_VALUE: ${clean_texts}
     Log To Console    SAVED_FILE_PATH: ${path}
-    RETURN    ${path}
+    RETURN    ${clean_texts}
 
 Save List Data
     [Arguments]    ${selector}    ${filename}=result.json

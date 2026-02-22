@@ -1,18 +1,4 @@
 {
-  "tools": [
-    {
-      "id": "test-tool",
-      "title": "New Title",
-      "last_updated": "2026-02-21T05:40:15.914Z"
-    },
-    {
-      "id": "naver-search",
-      "title": "네이버 뉴스 검색",
-      "description": "네이버 뉴스 검색 후 top3 중 처음 링크 진입",
-      "platform": "cross-platform",
-      "version": "1.0.0",
-      "last_updated": "2026-02-21T08:51:08.604Z"
-    }
-  ],
-  "last_updated": "2026-02-21T08:51:08.604Z"
+  "tools": [],
+  "last_updated": "2026-02-21T14:47:22.181Z"
 }
