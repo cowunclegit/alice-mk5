@@ -1,9 +1,30 @@
 import { webAgent } from "../web/index.js";
 import { applicationAgent } from "../application/index.js";
 import { filesystemAgent } from "../filesystem/index.js";
+import { resourceManagerAgent } from "../resource_manager/index.js";
 
 export const createAgentTools = (config) => {
   return [
+    {
+      name: "resource_manager_agent",
+      description: "Handles creation, modification, and deletion of Robot Framework keywords for specific websites. Use this when you need to teach the system how to interact with a new site or fix a broken automation.",
+      execute: async (intent, sessionId, dataStore, taskId, originalInput, history = []) => {
+        const result = await resourceManagerAgent.invoke({
+          intent,
+          sessionId,
+          dataStore,
+          isSubAgent: true,
+          originalInput: originalInput,
+          url: dataStore.lastUrl || ''
+        }, config);
+        return {
+          data: result.dataStore || {},
+          files: [],
+          history: result.history || [],
+          status: result.status
+        };
+      }
+    },
     {
       name: "web_agent",
       description: "Handles browser-based automation: searching, scraping, navigating, and clicking. Best for fetching external information.",

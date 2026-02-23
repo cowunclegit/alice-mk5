@@ -59,11 +59,24 @@ export class AnalysisService {
   }
 
   static _buildSelector(node) {
+    // 1. Prioritize stable semantic attributes (ARIA)
+    if (node.name && node.role && !['text', 'generic'].includes(node.role)) {
+      // Use XPath for semantic search as it's often more stable for "Name"
+      const escapedName = node.name.replace(/'/g, "&apos;");
+      if (node.role === 'button') return `xpath://button[contains(., '${escapedName}')]`;
+      if (node.role === 'link') return `xpath://a[contains(., '${escapedName}')]`;
+    }
+
+    // 2. Fallback to ID
     if (node.id) return `css:#${node.id}`;
+
+    // 3. Fallback to Class + Tag
     if (node.class) {
       const cleanClass = node.class.split(/\s+/).filter(c => c && !c.includes(':')).join('.');
       if (cleanClass) return `css:${node.tag}.${cleanClass}`;
     }
+
+    // 4. Ultimate fallback to Tag
     return `css:${node.tag}`;
   }
 }

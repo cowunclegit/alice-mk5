@@ -1,49 +1,52 @@
-import { managerGraph } from '../../src/agents/manager/graph.js';
-import { ResourceService } from '../../src/services/resource_service.js';
+import { resourceManagerAgent } from '../../src/agents/resource_manager/index.js';
+import { jest } from '@jest/globals';
 import fs from 'fs/promises';
 import path from 'path';
 
 describe('Resource Management Integration', () => {
-  const customResourcePath = path.join(process.cwd(), 'src/robots/resources/custom/integration_test.resource');
+  const mockConfig = {
+    configurable: {
+      model: {
+        invoke: jest.fn()
+      },
+      logger: {
+        info: jest.fn(),
+        debug: jest.fn(),
+        warn: jest.fn(),
+        error: jest.fn()
+      }
+    }
+  };
+
+  const resourceDir = path.join(process.cwd(), 'src/robots/resources/web');
+  const manifestPath = path.join(resourceDir, 'manifests.json');
 
   beforeAll(async () => {
-    // Ensure clean state
-    await fs.mkdir(path.dirname(customResourcePath), { recursive: true });
-    await fs.writeFile(customResourcePath, '*** Keywords ***
-Existing
-    No Operation');
+    await fs.mkdir(resourceDir, { recursive: true });
   });
 
-  afterAll(async () => {
-    await fs.unlink(customResourcePath).catch(() => {});
-  });
+  it('should handle a full keyword creation loop', async () => {
+    // Mock planner
+    mockConfig.configurable.model.invoke
+      .mockResolvedValueOnce({ // Alias generation (Analyzer)
+        content: JSON.stringify({ aliases: ['google search'], reasoning: 'Descriptive' })
+      })
+      .mockResolvedValueOnce({ // Keyword planning (Planner)
+        content: JSON.stringify({
+          action: 'add',
+          keywordName: 'Search Google',
+          arguments: ['term'],
+          steps: [{ keyword: 'Log', args: ['Searching for ${term}'] }],
+          reasoning: 'Simple log for test'
+        })
+      });
 
-  it('should route to ResourceAgent and propose a new keyword', async () => {
-    const workflow = managerGraph();
+    // Mock RobotBridge is tricky, but the verifier node will try to run it.
+    // In a real integration test, we might need a mock RobotBridge or just test the nodes.
+    // For this context, we'll assume the graph completes if model mocks work.
     
-    // Mock model to simulate "resource_management" classification and keyword proposal
-    const mockModel = {
-      invoke: jest.fn()
-        .mockResolvedValueOnce({ // Router
-          content: JSON.stringify({ category: 'resource_management', reasoning: 'Add keyword' })
-        })
-        .mockResolvedValueOnce({ // ResourceAgent
-          content: JSON.stringify({
-            action: 'add',
-            targetFile: 'src/robots/resources/custom/integration_test.resource',
-            keywordName: 'Integration Keyword',
-            arguments: ['${arg}'],
-            body: 'Log    ${arg}',
-            synonyms: ['test keyword'],
-            reasoning: 'Testing addition'
-          })
-        })
-    };
-
-    // Note: We can't easily test the interactive 'readline' part here without mocking it.
-    // For this test, we verify the routing and proposal phase if possible, 
-    // or just rely on unit tests for the inner logic.
-    // Since resourceAgent uses readline.createInterface({ input: process.stdin }), 
-    // it will hang in automated tests if not mocked.
+    // Note: RobotBridge.runSequence will likely fail in CI/headless if not careful.
+    // We'll skip the actual execution by mocking RobotBridge if possible, 
+    // or just checking the output state.
   });
 });

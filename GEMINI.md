@@ -12,6 +12,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-18
 - Local File System (JSON for data_store and sequences), `config.yaml` for compaction thresholds (003-multi-agent-orchestration)
 - Local file system (JSON for tools/catalog, .robot/.resource for scripts) (004-tool-repro-optimization)
 - Local file system (.resource, JSON) (005-manage-robot-resources)
+- Node.js (Latest LTS), JavaScript (ESM) + LangGraph.js, Robot Framework (SeleniumLibrary), Cheerio (for DOM analysis), fs/promises (007-manage-web-resources)
+- Local File System (JSON for manifest, `.resource` for keywords) (007-manage-web-resources)
 
 - Node.js (Latest LTS), JavaScript (ESM) + LangGraph.js, Robot Framework (SeleniumLibrary), Jest (for TDD) (001-robot-automation-agent)
 
@@ -31,6 +33,7 @@ npm test && npm run lint
 Node.js (Latest LTS), JavaScript (ESM): Follow standard conventions
 
 ## Recent Changes
+- 007-manage-web-resources: Added Node.js (Latest LTS), JavaScript (ESM) + LangGraph.js, Robot Framework (SeleniumLibrary), Cheerio (for DOM analysis), fs/promises
 - 006-simplify-agent-flow: Added Node.js (Latest LTS), JavaScript (ESM) + LangGraph.js, Robot Framework
 - 005-manage-robot-resources: Added Node.js (Latest LTS), JavaScript (ESM) + LangGraph.js, Robot Framework
 
