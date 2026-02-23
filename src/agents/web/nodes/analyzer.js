@@ -13,7 +13,10 @@ export const analyzer = async (state, config) => {
     'Search Naver', 
     'Click Naver News Tab', 
     'Open Visible Browser',
-    'Navigate To URL'
+    'Navigate To URL',
+    'Analyze Data',
+    'Summarize Results',
+    'Read Local Data'
   ];
 
   if (!state.currentStep || specializedKeywords.includes(state.currentStep.keyword)) {
@@ -91,12 +94,27 @@ ${axTree}
   // Argument Mapping
   const genericSelectorKeywords = ['Click Element', 'Type Into Element', 'Extract Element Data', 'Wait For Element', 'Save List Data', 'Scrape List Data'];
   const isGeneric = genericSelectorKeywords.includes(state.currentStep.keyword);
-  const isPlaceholder = state.currentStep.args && (state.currentStep.args[0] === 'null' || state.currentStep.args[0] === '' || state.currentStep.args[0] === undefined);
+  
+  // Special handling for Naver news extraction where selector is the 2nd argument
+  const isNaverExtraction = state.currentStep.keyword === 'Extract Naver News Results';
 
-  if (isGeneric || isPlaceholder) {
+  if (isGeneric) {
     if (!updatedArgs) updatedArgs = [];
     updatedArgs[0] = chosenCandidate.selector;
-    await logger.debug(`Analyzer: Injected selector "${chosenCandidate.selector}" into ${state.currentStep.keyword} arguments.`);
+    await logger.debug(`Analyzer: Injected selector "${chosenCandidate.selector}" into ${state.currentStep.keyword} at index 0.`);
+  } else if (isNaverExtraction) {
+    if (!updatedArgs) updatedArgs = ['result.json'];
+    updatedArgs[1] = chosenCandidate.selector;
+    await logger.debug(`Analyzer: Injected selector "${chosenCandidate.selector}" into ${state.currentStep.keyword} at index 1.`);
+  } else {
+    // Check for placeholder in any of the first 2 arguments
+    for (let idx = 0; idx < Math.min(updatedArgs?.length || 0, 2); idx++) {
+      if (updatedArgs[idx] === 'null' || updatedArgs[idx] === '' || updatedArgs[idx] === undefined) {
+        updatedArgs[idx] = chosenCandidate.selector;
+        await logger.debug(`Analyzer: Injected selector into ${state.currentStep.keyword} at index ${idx}.`);
+        break;
+      }
+    }
   }
 
   const updatedStep = { 

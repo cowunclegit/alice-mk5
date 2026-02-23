@@ -74,8 +74,10 @@ export class RobotBridge {
               val = val[part];
             }
             if (val !== undefined && val !== null) {
-              // If it's a string, it might be a JSON array string - try to parse or use first element if needed
-              return (typeof val === 'object') ? JSON.stringify(val) : val;
+              let result = (typeof val === 'object') ? JSON.stringify(val) : String(val);
+              // Clean up: trim and remove surrounding quotes if they were mistakenly added
+              result = result.trim().replace(/^["'](.*)["']$/, '$1');
+              return result;
             }
           } catch (e) {
             if (logger) logger.warn(`RobotBridge: Failed to resolve arg "${arg}": ${e.message}`);

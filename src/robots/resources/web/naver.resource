@@ -51,13 +51,21 @@ Click Naver News Tab
     Wait Until Keyword Succeeds    2x    2s    Location Should Contain    where=news
 
 Extract Naver News Results
-    [Arguments]    ${filename}=result.json
-    [Documentation]    Extracts news results using multiple possible selectors.
+    [Arguments]    ${filename}=result.json    ${optional_selector}=${EMPTY}
+    [Documentation]    Extracts news results using multiple possible selectors or a provided override.
+    
     ${selectors}=    Create List    
     ...    css:a.news_tit
+    ...    css:a.fender-ui_228e3bd1
     ...    css:ul.list_news li div.news_area a.news_tit
+    ...    css:a[href*="article"]:has(span), a[href*="article"]:has(strong)
     ...    css:a.tit
     
+    # Priority 1: User/Agent provided selector
+    IF    '${optional_selector}' != '${EMPTY}'
+        Insert Into List    ${selectors}    0    ${optional_selector}
+    END
+
     ${found_selector}=    Set Variable    ${EMPTY}
     FOR    ${sel}    IN    @{selectors}
         ${status}    ${val}=    Run Keyword And Ignore Error    Wait Until Element Is Visible    ${sel}    timeout=5s
@@ -68,7 +76,7 @@ Extract Naver News Results
     END
     
     IF    '${found_selector}' == '${EMPTY}'
-        Fail    Could not find any valid news title selectors on the page.
+        Fail    Could not find any valid news title selectors on the page. Try inspecting the AXTree.
     END
 
     ${data}=    Save List Data    ${found_selector}    ${filename}

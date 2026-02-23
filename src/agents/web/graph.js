@@ -41,7 +41,10 @@ const initializeStep = (state) => {
     'Navigate To URL',
     'Close Session Browser',
     'Extract All Links',
-    'Wait For Element'
+    'Wait For Element',
+    'Analyze Data',
+    'Summarize Results',
+    'Read Local Data'
   ];
 
   const batch = [];

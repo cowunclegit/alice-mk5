@@ -11,7 +11,10 @@ export const captureDom = async (state, config) => {
     'Click Naver News Tab', 
     'Open Visible Browser',
     'Navigate To URL',
-    'Close Session Browser'
+    'Close Session Browser',
+    'Analyze Data',
+    'Summarize Results',
+    'Read Local Data'
   ];
 
   const isSpecialized = state.currentStep && specializedKeywords.includes(state.currentStep.keyword);

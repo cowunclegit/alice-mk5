@@ -25,6 +25,11 @@ Decompose the user's request into a STRICT sequence of robot actions.
 ### AVAILABLE ROBOT RESOURCES:
 ${keywordsInfo}
 
+### VIRTUAL KEYWORDS (LLM-DIRECT):
+- **Analyze Data**: Use this if the task is to analyze, filter, or process information ALREADY present in the dataStore.
+- **Summarize Results**: Use this to create a final summary or answer based on collected data.
+- **Read Local Data**: Use this if the task is to "read" or "extract" from data already in context.
+
 ### PREVIOUSLY COLLECTED DATA (dataStore):
 ${JSON.stringify(state.dataStore || {}, null, 2)}
 
@@ -33,13 +38,14 @@ ${JSON.stringify((state.pastHistory || []).map(s => s.action.intent) || [], null
 
 ### CRITICAL LOGIC RULES:
 1. **ONLY PLAN FOR CURRENT TASK**: The Current Task is part of a larger mission. DO NOT re-plan steps that have already been completed (see history above).
-2. **CONTEXTUAL START**: Assume the browser is already at the location reached by previous steps. Only navigate if the Current Task requires a DIFFERENT platform or URL.
-3. **TWO-STEP RULE**: If the task requires information extraction:
+2. **COGNITIVE TASKS**: If the task is about reading, summarizing, or analyzing data already in the dataStore, use a **VIRTUAL KEYWORD**. DO NOT use 'No Operation'.
+3. **CONTEXTUAL START**: Assume the browser is already at the location reached by previous steps. Only navigate if the Current Task requires a DIFFERENT platform or URL.
+4. **TWO-STEP RULE**: If the task requires information extraction:
    - Step 1: Navigate/Search to the specific section (if not already there).
    - Step 2: Extract the data.
-4. **DYNAMIC SELECTORS**: For extraction steps (like 'Save List Data' or 'Extract Element Data'), if you don't know the selector, set the first argument to "". The Analyzer will find it.
-5. **DATA FLOW**: Use '{{key.path}}' to reference results in the dataStore. For example, if 'Extract Naver News Results' saved a file, you can't navigate to the file, but if it saved a URL into dataStore, use '{{url_key}}'.
-6. **STRICT LITERALS**: Use terms EXACTLY as provided in the user request.
+5. **DYNAMIC SELECTORS**: For extraction steps (like 'Save List Data' or 'Extract Element Data'), if you don't know the selector, set the first argument to "". The Analyzer will find it.
+6. **DATA FLOW**: Use '{{key.path}}' to reference results in the dataStore.
+7. **STRICT LITERALS**: Use terms EXACTLY as provided in the user request.
 
 Respond ONLY with a JSON object:
 {
