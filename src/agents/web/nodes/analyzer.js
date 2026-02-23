@@ -9,8 +9,15 @@ export const analyzer = async (state, config) => {
   const logger = config.configurable.logger;
   const model = config.configurable.model;
   
-  if (!state.currentStep) {
-    await logger.debug('Analyzer: No current step. Skipping.');
+  const specializedKeywords = [
+    'Search Naver', 
+    'Click Naver News Tab', 
+    'Open Visible Browser',
+    'Navigate To URL'
+  ];
+
+  if (!state.currentStep || specializedKeywords.includes(state.currentStep.keyword)) {
+    await logger.debug(`Analyzer: Skipping specialized keyword "${state.currentStep?.keyword}"`);
     return { status: 'analyzing' };
   }
 
@@ -82,13 +89,14 @@ ${axTree}
   const updatedArgs = [...(state.currentStep.args || [])];
   
   // Argument Mapping
-  const genericSelectorKeywords = ['Click Element', 'Type Into Element', 'Extract Element Data', 'Wait For Element', 'Save List Data'];
+  const genericSelectorKeywords = ['Click Element', 'Type Into Element', 'Extract Element Data', 'Wait For Element', 'Save List Data', 'Scrape List Data'];
   const isGeneric = genericSelectorKeywords.includes(state.currentStep.keyword);
-  const isPlaceholder = !updatedArgs[0] || updatedArgs[0] === 'null' || updatedArgs[0] === '';
+  const isPlaceholder = state.currentStep.args && (state.currentStep.args[0] === 'null' || state.currentStep.args[0] === '' || state.currentStep.args[0] === undefined);
 
   if (isGeneric || isPlaceholder) {
+    if (!updatedArgs) updatedArgs = [];
     updatedArgs[0] = chosenCandidate.selector;
-    await logger.debug(`Analyzer: Injected selector into ${state.currentStep.keyword} arguments.`);
+    await logger.debug(`Analyzer: Injected selector "${chosenCandidate.selector}" into ${state.currentStep.keyword} arguments.`);
   }
 
   const updatedStep = { 

@@ -5,6 +5,7 @@ import { EventEmitter } from 'events';
 const VERBOSITY_LEVELS = {
   'quiet': 0,
   'info': 1,
+  'warn': 1,
   'debug': 2
 };
 
@@ -59,6 +60,10 @@ export class Logger extends EventEmitter {
 
   async info(message) {
     await this.log(message, 'info');
+  }
+
+  async warn(message) {
+    await this.log(message, 'warn');
   }
 
   async error(message) {

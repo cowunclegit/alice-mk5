@@ -12,7 +12,10 @@ export const webAgent = {
     const state = {
       ...input,
       input: input.intent || input.input,
-      originalInput: input.originalInput // Ensure this is passed
+      originalInput: input.originalInput,
+      pastHistory: input.completedSteps || [], // Move passed history to pastHistory
+      completedSteps: [], // Reset for current execution
+      retryCount: 0 // Reset retry count for new task
     };
     return webGraph.invoke(state, config);
   }

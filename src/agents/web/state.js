@@ -19,6 +19,10 @@ export const AgentState = Annotation.Root({
     reducer: reduceCompletedSteps,
     default: () => [],
   }),
+  pastHistory: Annotation({
+    reducer: (x, y) => y ?? x,
+    default: () => [],
+  }),
   currentStep: Annotation({
     reducer: (x, y) => y ?? x,
     default: () => null,

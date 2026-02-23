@@ -11,7 +11,9 @@ import { captureDom } from "./nodes/capture_dom.js";
 import { analyzer } from "./nodes/analyzer.js";
 
 const shouldContinue = (state) => {
-  const lastStep = state.completedSteps[state.completedSteps.length - 1];
+  const lastStep = state.completedSteps && state.completedSteps.length > 0 
+    ? state.completedSteps[state.completedSteps.length - 1] 
+    : null;
   
   if (lastStep && lastStep.status === 'fail') {
     if (state.retryCount < 3) return "reviser";
@@ -29,10 +31,50 @@ const initializeStep = (state) => {
   if (!state.remainingSteps || state.remainingSteps.length === 0) {
     return { currentStep: null, status: 'finished' };
   }
-  const nextStep = state.remainingSteps[0];
-  const remaining = state.remainingSteps.slice(1);
+
+  // BATCHING LOGIC: Find consecutive steps that don't need AXTree analysis
+  const specializedKeywords = [
+    'Search Naver', 
+    'Click Naver News Tab', 
+    'Extract Naver News Results',
+    'Open Visible Browser',
+    'Navigate To URL',
+    'Close Session Browser',
+    'Extract All Links',
+    'Wait For Element'
+  ];
+
+  const batch = [];
+  let i = 0;
+  while (i < state.remainingSteps.length) {
+    const step = state.remainingSteps[i];
+    if (!step) break;
+    
+    const isSpecialized = specializedKeywords.includes(step.keyword);
+    const hasSelector = step.selector && step.selector !== '' && step.selector !== '""' && step.selector !== 'null';
+    
+    // If it's the first step, always take it
+    // If it's a subsequent step, only take it if it doesn't need AXTree (is specialized or has selector)
+    if (i === 0 || isSpecialized || hasSelector) {
+      batch.push(step);
+      i++;
+      // If the current step just added needs analysis NEXT, stop batching
+      if (!specializedKeywords.includes(step.keyword) && !hasSelector) break;
+    } else {
+      break;
+    }
+  }
+
+  if (batch.length === 0) {
+    return { status: 'error', reasoning: 'Failed to generate task batch.' };
+  }
+
+  const currentStep = batch[0];
+  const remaining = state.remainingSteps.slice(batch.length);
+  
   return {
-    currentStep: nextStep,
+    currentStep: currentStep,
+    batch: batch, // Store the batch for the executor
     remainingSteps: remaining,
     status: 'executing'
   };

@@ -5,13 +5,22 @@ export const validator = async (state, config) => {
   const model = config.configurable.model;
   const lastResult = state.context.lastResult;
 
+  const stepsToRecord = state.batch && state.batch.length > 0 ? state.batch : [state.currentStep];
+
   if (lastResult.status === 'fail') {
     await logger.warn(`Validator: Step failed semantically or technically. ${lastResult.error || ''}`);
     
+    const failedSteps = stepsToRecord.map((step, index) => ({
+      action: step,
+      status: 'fail',
+      result: index === stepsToRecord.length - 1 ? lastResult : { status: 'fail' }
+    }));
+
     return { 
-      completedSteps: { action: state.currentStep, status: 'fail', result: lastResult },
+      completedSteps: failedSteps,
       retryCount: (state.retryCount || 0) + 1,
-      status: 'failed'
+      status: 'failed',
+      batch: [] // Clear batch on failure too
     };
   }
 
@@ -30,10 +39,17 @@ Respond ONLY with a JSON object: { "success": true/false, "reasoning": "Detailed
   
   await logger.info(`Validator: Semantic check result: ${parsed.success ? 'PASS' : 'FAIL'} - ${parsed.reasoning}`);
 
+  const newCompletedSteps = stepsToRecord.map((step, index) => ({
+    action: step,
+    status: parsed.success ? 'pass' : 'fail',
+    result: index === stepsToRecord.length - 1 ? lastResult : { status: 'pass' } // Only attach full result to last step
+  }));
+
   return {
-    completedSteps: { action: state.currentStep, status: parsed.success ? 'pass' : 'fail', result: lastResult },
-    currentStep: null, // Clear for next step
-    currentHTML: null, // Clear cache
+    completedSteps: newCompletedSteps,
+    currentStep: null,
+    batch: [], // Clear batch
+    currentHTML: null,
     status: parsed.success ? 'passed' : 'failed'
   };
 };

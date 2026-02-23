@@ -28,23 +28,25 @@ ${keywordsInfo}
 ### PREVIOUSLY COLLECTED DATA (dataStore):
 ${JSON.stringify(state.dataStore || {}, null, 2)}
 
+### PREVIOUSLY COMPLETED STEPS (IN THIS MISSION):
+${JSON.stringify((state.pastHistory || []).map(s => s.action.intent) || [], null, 2)}
+
 ### CRITICAL LOGIC RULES:
-1. **TWO-STEP RULE**: If the user wants information, you MUST use at least two steps:
-   - Step 1: Navigate/Search to get to the page (e.g., 'Navigate To URL' or 'Search Naver').
-   - Step 2: Extract the data (e.g., 'Extract Element Data' or 'Save List Data').
-2. **NEVER STOP AT SEARCH**: A 'Search' step alone is NEVER enough to satisfy an information request.
-3. **DYNAMIC SELECTORS**: For extraction steps, always set the first argument (selector) to "" (empty string). The Analyzer will find it.
-4. **NO HALLUCINATED URLS**: NEVER use placeholder URLs like 'example.com'. Only navigate to URLs found in 'AVAILABLE ROBOT RESOURCES' or those extracted into the dataStore from previous steps.
-5. **DATA FLOW**: To use data from a previous task, reference the key in the dataStore using the format '{{key.path}}'. For example, '{{result.data.0.link}}'.
-6. **STRICT LITERALS**: DO NOT substitute or change literal values (search terms, names, dates) provided in the user request. Use them EXACTLY as given.
-7. **CONTEXTUAL CONSISTENCY**: Maintain consistency with the overall mission and the current page state. Do not navigate to a new platform if the required information is likely available on the current one.
+1. **ONLY PLAN FOR CURRENT TASK**: The Current Task is part of a larger mission. DO NOT re-plan steps that have already been completed (see history above).
+2. **CONTEXTUAL START**: Assume the browser is already at the location reached by previous steps. Only navigate if the Current Task requires a DIFFERENT platform or URL.
+3. **TWO-STEP RULE**: If the task requires information extraction:
+   - Step 1: Navigate/Search to the specific section (if not already there).
+   - Step 2: Extract the data.
+4. **DYNAMIC SELECTORS**: For extraction steps (like 'Save List Data' or 'Extract Element Data'), if you don't know the selector, set the first argument to "". The Analyzer will find it.
+5. **DATA FLOW**: Use '{{key.path}}' to reference results in the dataStore. For example, if 'Extract Naver News Results' saved a file, you can't navigate to the file, but if it saved a URL into dataStore, use '{{url_key}}'.
+6. **STRICT LITERALS**: Use terms EXACTLY as provided in the user request.
 
 Respond ONLY with a JSON object:
 {
   "plan": [
     { "intent": "Objective of this specific step", "keyword": "Keyword Name", "args": ["arg1", "arg2"] }
   ],
-  "reasoning": "Explain how Step 2 will extract the data after Step 1 reaches the page."
+  "reasoning": "Explain why this plan is the minimal delta needed to achieve the Current Task."
 }
 `;
 

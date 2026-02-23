@@ -5,13 +5,25 @@ import path from 'path';
 export const captureDom = async (state, config) => {
   const logger = config.configurable.logger;
   
-  // Only capture if:
-  // 1. Current step needs a selector
-  // 2. We don't have AXTree yet
-  // 3. We have at least one successful step in history (browser is open)
-  const hasBrowserHistory = state.completedSteps.some(s => s.status === 'pass');
+  // Keywords that don't need AXTree analysis because they have internal selectors or logic
+  const specializedKeywords = [
+    'Search Naver', 
+    'Click Naver News Tab', 
+    'Open Visible Browser',
+    'Navigate To URL',
+    'Close Session Browser'
+  ];
 
-  if (state.currentStep && !state.currentStep.selector && !state.currentHTML && hasBrowserHistory) {
+  const isSpecialized = state.currentStep && specializedKeywords.includes(state.currentStep.keyword);
+  
+  // Only capture if:
+  // 1. Current step is NOT specialized
+  // 2. Current step needs a selector (not provided by planner)
+  // 3. We don't have AXTree yet
+  // 4. Browser is open
+  const hasBrowserHistory = [...state.pastHistory, ...state.completedSteps].some(s => s.status === 'pass');
+
+  if (state.currentStep && !isSpecialized && !state.currentStep.selector && !state.currentHTML && hasBrowserHistory) {
     await logger.info('Graph: Capturing Accessibility Tree for element discovery...');
     
     // Give dynamic elements a moment to settle

@@ -51,19 +51,32 @@ export class RobotBridge {
       
       // Resolve dataStore references in args
       const resolvedArgs = safeArgs.map(arg => {
-        if (typeof arg === 'string' && (arg.includes('dataStore') || (arg.startsWith('{{') && arg.endsWith('}}')))) {
+        if (typeof arg === 'string' && (arg.includes('dataStore') || (arg.startsWith('{{') && arg.endsWith('}}')) || (arg.includes('${dataStore')))) {
           try {
-            // Support both dataStore['key'] and {{key}} formats
-            let path = arg.replace('dataStore', '').replace(/\[['"]/g, '.').replace(/['"]\]/g, '').replace(/^\./, '');
-            if (arg.startsWith('{{')) path = arg.substring(2, arg.length - 2);
+            // Normalize path: remove dataStore prefix and quotes/brackets
+            let path = arg;
+            if (arg.startsWith('{{')) {
+              path = arg.substring(2, arg.length - 2);
+            } else if (arg.includes('${dataStore')) {
+              const match = arg.match(/\${dataStore\['?(.*?)'?\]}/) || arg.match(/\${dataStore\.(.*?)}/);
+              if (match) path = match[1];
+            }
             
-            const parts = path.split('.');
+            path = path.replace('dataStore', '')
+                      .replace(/\[['"]/g, '.')
+                      .replace(/['"]\]/g, '')
+                      .replace(/^\./, '');
+            
+            const parts = path.split('.').filter(p => p !== '');
             let val = dataStore;
             for (const part of parts) {
               if (val === undefined || val === null) break;
               val = val[part];
             }
-            if (val !== undefined && val !== null) return val;
+            if (val !== undefined && val !== null) {
+              // If it's a string, it might be a JSON array string - try to parse or use first element if needed
+              return (typeof val === 'object') ? JSON.stringify(val) : val;
+            }
           } catch (e) {
             if (logger) logger.warn(`RobotBridge: Failed to resolve arg "${arg}": ${e.message}`);
           }

@@ -22,7 +22,12 @@ export const executor = async (state, config) => {
   }
 
   try {
-    const result = await targetTool.execute(currentTask.intent, state.sessionId, state.dataStore, currentTask.id, state.input);
+    // Collect all previous robot steps to pass back to the sub-agent
+    const previousSteps = (state.history || [])
+      .filter(h => h.steps)
+      .flatMap(h => h.steps);
+
+    const result = await targetTool.execute(currentTask.intent, state.sessionId, state.dataStore, currentTask.id, state.input, previousSteps);
     
     // Lineage and History
     let newLineage = LineageTracker.recordUpdate(state.lineage, { [currentTask.id + '_intent']: currentTask.intent }, currentTask.id, 'input');
@@ -34,6 +39,7 @@ export const executor = async (state, config) => {
       intent: currentTask.intent,
       status: result.status,
       data: result.data,
+      steps: result.history, // Include the robot steps in Manager history
       timestamp: new Date().toISOString()
     };
 

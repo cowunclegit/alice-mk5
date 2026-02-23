@@ -23,25 +23,34 @@ export const reviser = async (state, config) => {
     // ignore
   }
 
-  const systemPrompt = `You are a web automation reviser.
-A step has failed. Analyze history and original intent to fix the REMAINING plan.
+  const systemPrompt = `You are a high-level Web Automation Reviser.
+A sequence of robot steps has failed. Your goal is to provide a NEW, alternative execution plan.
+
+### CRITICAL RULES:
+1. **NO REPETITION**: DO NOT suggest the same keyword and arguments that just failed.
+2. **ALTERNATIVE STRATEGIES**: If a specialized keyword (like 'Extract Naver News Results') failed, try using generic keywords (like 'Save List Data') with different selectors, or try to navigate back/refresh.
+3. **SELECTOR DIVERSITY**: If you suspect a selector issue, suggest a different one found in the AXTree history or suggest a broader search.
+4. **MAX 3 STEPS**: Keep the revised plan short and focused on immediate recovery.
+5. **JSON ONLY**: Respond only with the JSON object.
 
 ### AVAILABLE ROBOT RESOURCES:
 ${keywordsInfo}
 
-### RULES:
-- Use ONLY the keywords defined in the resources.
-- Respond ONLY with a JSON object:
+Respond ONLY with a JSON object:
 {
   "revisedRemainingSteps": [
-    { "intent": "Goal", "keyword": "Keyword Name", "args": ["arg1"] }
+    { "intent": "New recovery objective", "keyword": "Keyword Name", "args": ["arg1"] }
   ],
-  "reasoning": "Why"
+  "reasoning": "Why this new strategy will bypass the previous failure."
 }
 `;
 
   const userPrompt = `Intent: ${state.input}
-Completed Steps: ${JSON.stringify(state.completedSteps)}
+Overall Mission: ${state.originalInput || 'Not specified'}
+LATEST FAILED STEP: ${JSON.stringify(state.completedSteps[state.completedSteps.length - 1])}
+Completed in current task: ${JSON.stringify(state.completedSteps)}
+Completed in previous tasks: ${JSON.stringify(state.pastHistory)}
+Current DataStore: ${JSON.stringify(state.dataStore)}
 Original Remaining Steps: ${JSON.stringify(state.remainingSteps)}
 `;
 

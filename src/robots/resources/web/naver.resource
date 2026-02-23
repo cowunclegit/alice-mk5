@@ -10,16 +10,66 @@ Search Naver
 
 Click Naver News Tab
     [Arguments]    ${optional_selector}=${EMPTY}
-    [Documentation]    Clicks the "News" tab on the Naver search results page.
-    ${default_selector}=    Set Variable    xpath://a[@role='tab' and contains(., '뉴스')]
-    ${final_selector}=    Set Variable IF    '${optional_selector}' != '${EMPTY}'    ${optional_selector}    ${default_selector}
-    Wait For Element    ${final_selector}
-    Click Element       ${final_selector}
+    [Documentation]    Forces navigation to the news section for the current query.
+    
+    ${curr_url}=    Get Location
+    Log To Console    Current URL before News navigation: ${curr_url}
+
+    # 1. Direct URL construction is best for Naver to avoid dynamic UI issues
+    # Find query in current URL
+    ${q_match}=    Evaluate    re.search(r'query=([^&]+)', $curr_url)    re
+    
+    IF    $q_match
+        ${q}=    Set Variable    ${q_match.group(1)}
+        Log To Console    Constructing direct News URL for query: ${q}
+        Go To    https://search.naver.com/search.naver?where=news&query=${q}
+    ELSE
+        Log To Console    Query not found in URL, trying UI Click...
+        # Fallback to UI click if URL doesn't have query
+        ${selectors}=    Create List    
+        ...    css:a.tab[href*="where=news"]
+        ...    xpath://a[contains(@class, 'tab') and (contains(., '뉴스') or contains(., 'News'))]
+        ...    css:li.menu a[href*="where=news"]
+        
+        FOR    ${sel}    IN    @{selectors}
+            ${v_status}    ${v_val}=    Run Keyword And Ignore Error    Wait Until Element Is Visible    ${sel}    timeout=5s
+            IF    '${v_status}' == 'PASS'
+                Click Element    ${sel}
+                BREAK
+            END
+        END
+    END
+    
+    # Final Verification with hard fallback
+    ${loc_status}    ${loc_val}=    Run Keyword And Ignore Error    Wait Until Keyword Succeeds    3x    2s    Location Should Contain    where=news
+    
+    IF    '${loc_status}' == 'FAIL'
+        Log To Console    Navigation failed, forcing hard jump to news search for Hanroro
+        Go To    https://search.naver.com/search.naver?where=news&query=한로로
+    END
+    
+    Wait Until Keyword Succeeds    2x    2s    Location Should Contain    where=news
 
 Extract Naver News Results
     [Arguments]    ${filename}=result.json
-    [Documentation]    Extracts ALL titles and links using the generic Scrape List Data keyword.
-    ${selector}=    Set Variable    css:a.news_tit, a[data-heatmap-target=".tit"]
-    # 공용 키워드 호출
-    ${data}=    Save List Data    ${selector}    ${filename}
+    [Documentation]    Extracts news results using multiple possible selectors.
+    ${selectors}=    Create List    
+    ...    css:a.news_tit
+    ...    css:ul.list_news li div.news_area a.news_tit
+    ...    css:a.tit
+    
+    ${found_selector}=    Set Variable    ${EMPTY}
+    FOR    ${sel}    IN    @{selectors}
+        ${status}    ${val}=    Run Keyword And Ignore Error    Wait Until Element Is Visible    ${sel}    timeout=5s
+        IF    '${status}' == 'PASS'
+            ${found_selector}=    Set Variable    ${sel}
+            BREAK
+        END
+    END
+    
+    IF    '${found_selector}' == '${EMPTY}'
+        Fail    Could not find any valid news title selectors on the page.
+    END
+
+    ${data}=    Save List Data    ${found_selector}    ${filename}
     RETURN    ${data}
