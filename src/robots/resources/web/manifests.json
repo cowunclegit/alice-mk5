@@ -1,0 +1,14 @@
+{
+  "mappings": {
+    "web/core.resource": [
+      "core"
+    ],
+    "web/naver.resource": [
+      "naver",
+      "Naver Search",
+      "Naver Find",
+      "Korean Web Search",
+      "Naver Explore"
+    ]
+  }
+}

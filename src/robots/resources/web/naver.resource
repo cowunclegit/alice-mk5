@@ -81,3 +81,7 @@ Extract Naver News Results
 
     ${data}=    Save List Data    ${found_selector}    ${filename}
     RETURN    ${data}
+
+Click Naver Blog Tab
+
+    Click Element    xpath://a[.//span[@class='service_name' and contains(text(),'블로그')]]

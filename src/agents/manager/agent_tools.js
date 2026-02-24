@@ -7,7 +7,7 @@ export const createAgentTools = (config) => {
   return [
     {
       name: "resource_manager_agent",
-      description: "Handles creation, modification, and deletion of Robot Framework keywords for specific websites. Use this when you need to teach the system how to interact with a new site or fix a broken automation.",
+      description: "Handles creation, modification, and deletion of Robot Framework keywords for specific websites. IMPORTANT: The resource_manager_agent analyzes the CURRENT browser screen. If the keyword requires being on a specific page or state (e.g., after logging in, or on a search results page), you MUST use web_agent to navigate to that exact state FIRST before calling resource_manager_agent.",
       execute: async (intent, sessionId, dataStore, taskId, originalInput, history = []) => {
         const result = await resourceManagerAgent.invoke({
           intent,
